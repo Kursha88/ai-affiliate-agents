@@ -327,7 +327,7 @@ class CopywriterAgent:
 
 👉 {referral_link}
 
-📢 Больше обзоров ИИ-инструментов: @nejroavtomatizacia"""),
+"📢 Больше обзоров ИИ-инструментов: @{channel_username}"""),
             
             ("user", """Инструмент: {name}
 Категория: {category}
