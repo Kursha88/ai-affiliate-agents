@@ -3,7 +3,7 @@ name: AI Affiliate Agent - Daily Posts
 on:
   schedule:
     # Запускаем 3 раза в день: 9:00, 15:00, 21:00 по UTC
-    - cron: '0 9,15,21 * * *'
+    - cron: '0 6,12,18 * * *'
   workflow_dispatch:  # Позволяет запускать вручную
 
 jobs:
