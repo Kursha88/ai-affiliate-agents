@@ -17,10 +17,10 @@ GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
 
 # Проверка наличия всех необходимых переменных
 if not all([TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_ID, GROQ_API_KEY]):
-    raise ValueError(" Missing required environment variables!")
+    raise ValueError("Missing required environment variables!")
 
 # ============================================
-# БАЗА ДАННЫХ ИИ-ИНСТРУМЕНТОВ
+# БАЗА ДАННЫХ ИИ-ИНСТРУМЕНТОВ (40 инструментов)
 # ============================================
 
 AI_TOOLS_DB = [
@@ -299,13 +299,14 @@ class CopywriterAgent:
         """Генерирует текст поста"""
         
         prompt = ChatPromptTemplate.from_messages([
-    ("system", """Ты пишешь посты для Telegram. Твой стиль — коротко, просто, по-человечески.
+            ("system", """Ты пишешь посты для Telegram. Твой стиль — коротко, просто, по-человечески.
 
 ПИШИ ТАК:
 - Как будто советуешь другу в мессенджере
 - Короткие предложения
-- Простые слова
+- Простые слова (НЕ "преобразует", а "переводит")
 - БЕЗ общих фраз вроде "упрощает процесс", "облегчает работу"
+- Сразу к делу: что это, что делает, зачем нужно
 
 НЕ ПИШИ:
 - "вам", "ваш" — обращайся нейтрально
@@ -326,15 +327,15 @@ class CopywriterAgent:
 
 👉 {referral_link}
 
-📢 Больше обзоров ИИ-инструментов в канале: @nejroavtomatizacia"""),
-    
-    ("user", """Инструмент: {name}
+📢 Больше обзоров ИИ-инструментов: @nejroavtomatizacia"""),
+            
+            ("user", """Инструмент: {name}
 Категория: {category}
 Что делает: {description}
 Возможности: {features}
 
 Напиши пост.""")
-])
+        ])
         
         chain = prompt | self.llm
         
@@ -343,7 +344,8 @@ class CopywriterAgent:
             "category": tool_info["category"],
             "description": tool_info["description"],
             "features": ", ".join(tool_info.get("features", [])),
-            "referral_link": REFERRAL_LINK
+            "referral_link": REFERRAL_LINK,
+            "channel_username": "nejroavtomatizacia"  # ЗАМЕНИ на свой юзернейм канала
         })
         
         return response.content
@@ -358,14 +360,11 @@ class VisualAgent:
     def generate_image(self, tool_name, category):
         """Генерирует URL изображения"""
         
-        # Создаем промпт для генерации
         prompt = f"modern minimalist tech illustration of {tool_name} AI tool, {category}, blue and purple gradient, professional, clean design, 4k"
         
-        # Кодируем промпт для URL
         import urllib.parse
         encoded_prompt = urllib.parse.quote(prompt)
         
-        # Генерируем URL изображения (бесплатный сервис)
         image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1080&height=1080&nologo=true"
         
         return image_url
@@ -383,7 +382,7 @@ class VisualAgent:
         return None
 
 # ============================================
-# АГЕНТ 4: ПУБЛИКАТОР (отправляет в Telegram)
+# АГЕНТ 4: TELEGRAM ПУБЛИКАТОР
 # ============================================
 
 class PublisherAgent:
@@ -397,7 +396,6 @@ class PublisherAgent:
         
         try:
             if image_path and os.path.exists(image_path):
-                # Отправляем с фото
                 with open(image_path, 'rb') as photo:
                     await self.bot.send_photo(
                         chat_id=TELEGRAM_CHANNEL_ID,
@@ -406,18 +404,76 @@ class PublisherAgent:
                         parse_mode='HTML'
                     )
             else:
-                # Отправляем только текст
                 await self.bot.send_message(
                     chat_id=TELEGRAM_CHANNEL_ID,
                     text=text,
                     parse_mode='HTML'
                 )
             
-            print("✅ Пост успешно опубликован!")
+            print("✅ Пост опубликован в Telegram!")
             return True
             
         except Exception as e:
-            print(f"❌ Ошибка публикации: {e}")
+            print(f"❌ Ошибка публикации в Telegram: {e}")
+            return False
+
+# ============================================
+# АГЕНТ 5: TWITTER ПУБЛИКАТОР (через Buffer)
+# ============================================
+
+class TwitterPublisherAgent:
+    """Публикует посты в Twitter через Buffer API"""
+    
+    def publish_to_twitter(self, text):
+        """Отправляет пост в Twitter через Buffer API"""
+        
+        buffer_token = os.environ.get("BUFFER_ACCESS_TOKEN")
+        
+        if not buffer_token:
+            print("⚠️ BUFFER_ACCESS_TOKEN не найден, пропускаем Twitter")
+            return False
+        
+        try:
+            # Получаем ID профиля Twitter
+            profiles_response = requests.get(
+                "https://api.bufferapp.com/1/profiles.json",
+                params={"access_token": buffer_token}
+            )
+            profiles = profiles_response.json()
+            
+            # Находим Twitter профиль
+            twitter_profile_id = None
+            for profile in profiles:
+                if profile.get('service') == 'twitter':
+                    twitter_profile_id = profile['id']
+                    break
+            
+            if not twitter_profile_id:
+                print("❌ Twitter профиль не найден в Buffer")
+                return False
+            
+            # Публикуем пост
+            post_data = {
+                "text": text,
+                "profile_ids[]": twitter_profile_id,
+                "now": "true"
+            }
+            
+            response = requests.post(
+                "https://api.bufferapp.com/1/updates/create.json",
+                data=post_data,
+                params={"access_token": buffer_token}
+            )
+            
+            if response.status_code == 200:
+                print("✅ Пост опубликован в Twitter!")
+                return True
+            else:
+                print(f"❌ Ошибка Twitter: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Ошибка Twitter API: {e}")
             return False
 
 # ============================================
@@ -432,6 +488,7 @@ class AgentOrchestrator:
         self.copywriter = CopywriterAgent()
         self.visual = VisualAgent()
         self.publisher = PublisherAgent()
+        self.twitter_publisher = TwitterPublisherAgent()
     
     async def run(self):
         """Запускает полный цикл создания и публикации поста"""
@@ -455,20 +512,24 @@ class AgentOrchestrator:
         if image_path:
             print(f"✅ Изображение загружено: {image_path}\n")
         
-        # Шаг 4: Публикатор отправляет в Telegram
-        print("📤 Агент-публикатор отправляет пост...")
-        success = await self.publisher.publish_post(post_text, image_path)
+        # Шаг 4: Публикуем в Telegram
+        print("📤 Агент-публикатор отправляет пост в Telegram...")
+        tg_success = await self.publisher.publish_post(post_text, image_path)
+        
+        # Шаг 5: Публикуем в Twitter
+        print("🐦 Агент-Twitter публикует пост...")
+        twitter_success = self.twitter_publisher.publish_to_twitter(post_text)
         
         # Удаляем временный файл
         if image_path and os.path.exists(image_path):
             os.remove(image_path)
         
-        if success:
-            print("\n🎉 Миссия выполнена! Пост опубликован.")
-        else:
-            print("\n⚠️ Пост не опубликован. Проверьте настройки бота.")
+        if tg_success:
+            print("\n✅ Пост опубликован в Telegram!")
+        if twitter_success:
+            print("🎉 Пост опубликован в Twitter!")
         
-        return success
+        return tg_success or twitter_success
 
 # ============================================
 # ЗАПУСК СИСТЕМЫ
