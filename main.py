@@ -425,56 +425,55 @@ class TwitterPublisherAgent:
     """Публикует посты в Twitter через Buffer API"""
     
     def publish_to_twitter(self, text):
-        """Отправляет пост в Twitter через Buffer API"""
+    """Отправляет пост в Twitter через Buffer API"""
+    
+    buffer_token = os.environ.get("BUFFER_ACCESS_TOKEN")
+    
+    if not buffer_token:
+        print("⚠️ BUFFER_ACCESS_TOKEN не найден, пропускаем Twitter")
+        return False
+    
+    try:
+        # Получаем ID профиля Twitter
+        profiles_response = requests.get(
+            "https://api.bufferapp.com/1/profiles.json",
+            params={"access_token": buffer_token}
+        )
+        profiles = profiles_response.json()
         
-        buffer_token = os.environ.get("BUFFER_ACCESS_TOKEN")
+        # Находим Twitter профиль
+        twitter_profile_id = None
+        for profile in profiles:
+            if profile.get('service') == 'twitter':
+                twitter_profile_id = profile['id']
+                break
         
-        if not buffer_token:
-            print("⚠️ BUFFER_ACCESS_TOKEN не найден, пропускаем Twitter")
+        if not twitter_profile_id:
+            print(" Twitter профиль не найден в Buffer")
             return False
         
-        try:
-            # Получаем ID профиля Twitter
-            profiles_response = requests.get(
-                "https://api.bufferapp.com/1/profiles.json",
-                params={"access_token": buffer_token}
-            )
-            profiles = profiles_response.json()
-            
-            # Находим Twitter профиль
-            twitter_profile_id = None
-            for profile in profiles:
-                if profile.get('service') == 'twitter':
-                    twitter_profile_id = profile['id']
-                    break
-            
-            if not twitter_profile_id:
-                print("❌ Twitter профиль не найден в Buffer")
-                return False
-            
-            # Публикуем пост
-            post_data = {
-                "text": text,
-                "profile_ids[]": twitter_profile_id,
-                "now": "true"
-            }
-            
-            response = requests.post(
-                "https://api.bufferapp.com/1/updates/create.json",
-                data=post_data,
-                params={"access_token": buffer_token}
-            )
-            
-            if response.status_code == 200:
-                print("✅ Пост опубликован в Twitter!")
-                return True
-            else:
-                print(f"❌ Ошибка Twitter: {response.status_code} - {response.text}")
-                return False
-                
-        except Exception as e:
-            print(f"❌ Ошибка Twitter API: {e}")
+        # Публикуем пост в очередь Buffer (не сразу!)
+        post_data = {
+            "text": text,
+            "profile_ids[]": twitter_profile_id
+        }
+        
+        response = requests.post(
+            "https://api.bufferapp.com/1/updates/create.json",
+            data=post_data,
+            params={"access_token": buffer_token}
+        )
+        
+        if response.status_code == 200:
+            print("✅ Пост добавлен в очередь Buffer!")
+            return True
+        else:
+            print(f"❌ Ошибка Twitter: {response.status_code} - {response.text}")
             return False
+            
+    except Exception as e:
+        print(f" Ошибка Twitter API: {e}")
+        return False
 
 # ============================================
 # ОРКЕСТРАТОР (координирует агентов)
