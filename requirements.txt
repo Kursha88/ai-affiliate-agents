@@ -1,4 +1,24 @@
-langchain-groq==0.1.9
-python-telegram-bot==21.0
-requests==2.31.0
+# AI APIs
+google-generativeai==0.7.2
+groq==0.9.0
+
+# Telegram
+python-telegram-bot==20.7
+
+# Переменные окружения
 python-dotenv==1.0.0
+
+# Конфиг файлы
+pyyaml==6.0.1
+
+# HTTP запросы
+requests==2.31.0
+
+# Изображения (Python 3.14+ требует эту версию)
+Pillow==12.2.0
+
+# Планировщик
+schedule==1.2.1
+
+# Twitter/X (на будущее)
+tweepy==4.14.0

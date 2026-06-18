@@ -1,0 +1,28 @@
+# Виртуальное окружение
+venv/
+env/
+.env
+
+# Python кэш
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# Данные и логи (локальные, не нужны на GitHub)
+data/*.csv
+data/*.json
+assets/output/
+
+# OS файлы
+.DS_Store
+Thumbs.db
+
+# Секреты
+*.key
+secrets.yaml
