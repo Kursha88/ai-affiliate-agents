@@ -1,0 +1,70 @@
+# Список партнёрских программ
+# Пока используем тестовые ссылки
+# Заменим на реальные после одобрения партнёрок
+
+partners:
+
+  - id: "writesonic"
+    name: "Writesonic"
+    description: "AI-инструмент для написания текстов, статей и рекламных копий"
+    category: "AI Writing"
+    affiliate_link: "https://writesonic.com"
+    commission: "30%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "PayPal"
+    free_trial: true
+    active: true
+    notes: "Подать заявку на партнёрку"
+
+  - id: "pictory"
+    name: "Pictory AI"
+    description: "Превращает текст и статьи в короткие видео с помощью AI"
+    category: "AI Video"
+    affiliate_link: "https://pictory.ai"
+    commission: "20%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "PayPal"
+    free_trial: true
+    active: true
+    notes: "Подать заявку на партнёрку"
+
+  - id: "murf"
+    name: "Murf AI"
+    description: "AI-генератор голоса и озвучки для видео и подкастов"
+    category: "AI Voice"
+    affiliate_link: "https://murf.ai"
+    commission: "25%"
+    cookie_days: 60
+    geo: "Worldwide"
+    payout: "PayPal"
+    free_trial: true
+    active: true
+    notes: "Подать заявку на партнёрку"
+
+  - id: "simplified"
+    name: "Simplified"
+    description: "Универсальный AI для дизайна, копирайтинга и публикации контента"
+    category: "AI All-in-One"
+    affiliate_link: "https://simplified.com"
+    commission: "30%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "PayPal"
+    free_trial: true
+    active: true
+    notes: "Подать заявку на партнёрку"
+
+  - id: "vidnoz"
+    name: "Vidnoz AI"
+    description: "Бесплатный AI-генератор видео с аватарами и голосом"
+    category: "AI Video"
+    affiliate_link: "https://vidnoz.com"
+    commission: "25%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "PayPal"
+    free_trial: true
+    active: true
+    notes: "Подать заявку на партнёрку"

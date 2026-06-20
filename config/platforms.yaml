@@ -1,0 +1,30 @@
+# Настройки платформ для публикации
+
+platforms:
+
+  telegram:
+    enabled: true
+    posts_per_day: 2
+    language: "ru"
+    max_length: 4096
+    disclosure_required: true
+    disclosure_text: "\n\n⚠️ <i>Ссылка может быть партнёрской. Если вы зарегистрируетесь по ней, автор может получить комиссию без доплаты для вас.</i>"
+    schedule:
+      - "10:00"
+      - "19:00"
+
+  twitter:
+    enabled: false
+    mode: "draft"
+    max_length: 280
+    posts_per_day: 3
+
+  pinterest:
+    enabled: false
+    mode: "draft"
+    posts_per_day: 2
+
+  reddit:
+    enabled: false
+    mode: "draft"
+    posts_per_day: 1

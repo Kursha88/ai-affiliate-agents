@@ -1,0 +1,45 @@
+# Основные настройки системы
+
+project:
+  name: "AI Affiliate Agents"
+  version: "1.0.0"
+  language: "ru"
+  niche: "AI инструменты для работы и бизнеса"
+
+content:
+  topics:
+    - "AI для создания видео"
+    - "AI для написания текстов"
+    - "AI для дизайна"
+    - "AI для автоматизации бизнеса"
+    - "AI для SMM и контента"
+    - "AI для фрилансеров"
+    - "AI для студентов"
+    - "Подборка AI-инструментов"
+    - "Сравнение AI-сервисов"
+    - "Новости мира AI"
+    - "Лайфхаки с AI"
+    - "AI для заработка онлайн"
+
+  formats:
+    - "Обзор инструмента"
+    - "Топ-5 инструментов"
+    - "Пошаговая инструкция"
+    - "Сравнение сервисов"
+    - "Проблема и решение"
+    - "Лайфхак дня"
+    - "Новость AI"
+    - "Личная рекомендация"
+
+ai:
+  primary: "groq"
+  fallback: "gemini"
+  model_groq: "llama-3.1-8b-instant"
+  model_gemini: "gemini-1.5-flash"
+  temperature: 0.7
+  max_tokens: 1000
+
+logging:
+  enabled: true
+  file: "data/published_posts.csv"
+  analytics_file: "data/analytics.csv"
