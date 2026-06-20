@@ -14,7 +14,7 @@ pyyaml==6.0.1
 # HTTP запросы
 requests==2.31.0
 
-# Изображения (Python 3.14+ требует эту версию)
+# Изображения
 Pillow==12.2.0
 
 # Планировщик
@@ -22,3 +22,6 @@ schedule==1.2.1
 
 # Twitter/X (на будущее)
 tweepy==4.14.0
+
+# Шрифты для GitHub Actions Linux
+fonttools==4.53.0

@@ -1,0 +1,67 @@
+name: AI Affiliate Pipeline
+
+# Запускаем по расписанию (время UTC)
+# Украина = UTC+3 в летнее время
+# 07:00 UTC = 10:00 Киев
+# 16:00 UTC = 19:00 Киев
+on:
+  schedule:
+    - cron: "0 7 * * *"
+    - cron: "0 16 * * *"
+
+  # Также даём возможность запустить вручную из интерфейса GitHub
+  workflow_dispatch:
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Create .env file
+        run: |
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
+          echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
+          echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
+          echo "TELEGRAM_CHANNEL_ID=${{ secrets.TELEGRAM_CHANNEL_ID }}" >> .env
+          echo "TELEGRAM_CHANNEL_USERNAME=${{ secrets.TELEGRAM_CHANNEL_USERNAME }}" >> .env
+
+      - name: Ensure data directory structure
+        run: |
+          mkdir -p assets/output
+          echo "date,time,platform,topic,format,product,ai_source,post_length,message_id,status" > data/published_posts.csv
+
+      - name: Initialize data files if missing
+        run: |
+          if [ ! -s data/topic_history.json ]; then echo "[]" > data/topic_history.json; fi
+          if [ ! -s data/content_queue.json ]; then echo "[]" > data/content_queue.json; fi
+          if [ ! -s data/analytics.csv ]; then echo "date,metric,value" > data/analytics.csv; fi
+
+      - name: Run AI pipeline
+        run: |
+          python -m src.main
+
+      - name: Show report
+        run: |
+          python -m src.main report
+
+      - name: Commit logs back to repository
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data/
+          git add assets/
+          git diff --quiet && git diff --staged --quiet || git commit -m "Auto-update logs after pipeline run [skip ci]"
+          git push

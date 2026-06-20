@@ -53,11 +53,17 @@ def _ensure_dirs() -> None:
 def _get_font(size: int) -> ImageFont.ImageFont:
     """Возвращает шрифт — системный или дефолтный"""
     font_paths = [
+        # Windows
         "C:/Windows/Fonts/arial.ttf",
         "C:/Windows/Fonts/segoeui.ttf",
         "C:/Windows/Fonts/calibri.ttf",
+        # Linux (GitHub Actions Ubuntu)
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+        # macOS
+        "/Library/Fonts/Arial.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
     ]
     for path in font_paths:
         if os.path.exists(path):

@@ -70,5 +70,17 @@
     "topic": "AI для SMM и контента",
     "format": "Топ-5 инструментов",
     "product": "murf"
+  },
+  {
+    "date": "2026-06-20",
+    "topic": "AI для дизайна",
+    "format": "Проблема и решение",
+    "product": "writesonic"
+  },
+  {
+    "date": "2026-06-20",
+    "topic": "AI для создания видео",
+    "format": "Новость AI",
+    "product": "writesonic"
   }
 ]
