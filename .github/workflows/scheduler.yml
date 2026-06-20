@@ -1,22 +1,15 @@
 name: AI Affiliate Pipeline
 
-# Запускаем по расписанию (время UTC)
-# Украина = UTC+3 в летнее время
-# 07:00 UTC = 10:00 Киев
-# 16:00 UTC = 19:00 Киев
 on:
   schedule:
     - cron: "0 7 * * *"
     - cron: "0 16 * * *"
-
-  # Запуск вручную из интерфейса GitHub
   workflow_dispatch:
 
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
 
-    # Даём права на запись в репозиторий
     permissions:
       contents: write
 
@@ -24,7 +17,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT }}
           fetch-depth: 0
 
       - name: Set up Python
@@ -77,12 +70,13 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
+          git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/Kursha88/ai-affiliate-agents.git
           git pull --rebase origin main
           git add data/topic_history.json
           git add data/published_posts.csv
           if git diff --staged --quiet; then
             echo "Нет изменений для коммита"
           else
-            git commit -m "Auto: update logs after pipeline run [skip ci]"
+            git commit -m "Auto: update logs [skip ci]"
             git push origin main
           fi
