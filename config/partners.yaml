@@ -1,12 +1,78 @@
-# Список партнёрских программ
-# Пока используем тестовые ссылки
-# Заменим на реальные после одобрения партнёрок
-
 partners:
+
+  - id: "elevenlabs"
+    name: "ElevenLabs"
+    description: "AI генератор голоса и озвучки — превращает текст в реалистичную речь"
+    category: "AI Voice"
+    affiliate_link: "https://elevenlabs.io"
+    commission: "22%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "PayPal"
+    free_trial: true
+    active: true
+    status: "pending"
+    notes: "Заявка подана через PartnerStack. Ждём одобрения."
+
+  - id: "castmagic"
+    name: "Castmagic"
+    description: "AI инструмент который превращает аудио и видео в контент — посты, резюме, статьи"
+    category: "AI Content"
+    affiliate_link: "https://castmagic.io"
+    commission: "40%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "PayPal"
+    free_trial: true
+    active: true
+    status: "pending"
+    notes: "Заявка подана через PartnerStack. Ждём одобрения."
+
+  - id: "replyio"
+    name: "Reply.io"
+    description: "AI платформа для автоматизации продаж — email outreach, лидогенерация"
+    category: "AI Sales"
+    affiliate_link: "https://reply.io"
+    commission: "15%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "PayPal"
+    free_trial: true
+    active: true
+    status: "pending"
+    notes: "Заявка подана через PartnerStack. Ждём одобрения."
+
+  - id: "mindstudio"
+    name: "MindStudio"
+    description: "No-code платформа для создания AI агентов и автоматизации без программирования"
+    category: "AI Automation"
+    affiliate_link: "https://mindstudio.ai"
+    commission: "20%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "PayPal"
+    free_trial: true
+    active: true
+    status: "pending"
+    notes: "Заявка подана через PartnerStack. Ждём одобрения."
+
+  - id: "murf"
+    name: "Murf AI"
+    description: "AI генератор голоса и озвучки для видео, подкастов и презентаций"
+    category: "AI Voice"
+    affiliate_link: "https://murf.ai"
+    commission: "25%"
+    cookie_days: 60
+    geo: "Worldwide"
+    payout: "PayPal"
+    free_trial: true
+    active: true
+    status: "pending"
+    notes: "Заявка подана через PartnerStack. Ждём одобрения."
 
   - id: "writesonic"
     name: "Writesonic"
-    description: "AI-инструмент для написания текстов, статей и рекламных копий"
+    description: "AI инструмент для написания текстов, статей, рекламных копий и SEO контента"
     category: "AI Writing"
     affiliate_link: "https://writesonic.com"
     commission: "30%"
@@ -15,7 +81,8 @@ partners:
     payout: "PayPal"
     free_trial: true
     active: true
-    notes: "Подать заявку на партнёрку"
+    status: "pending"
+    notes: "Найти актуальную партнёрскую страницу"
 
   - id: "pictory"
     name: "Pictory AI"
@@ -28,43 +95,5 @@ partners:
     payout: "PayPal"
     free_trial: true
     active: true
-    notes: "Подать заявку на партнёрку"
-
-  - id: "murf"
-    name: "Murf AI"
-    description: "AI-генератор голоса и озвучки для видео и подкастов"
-    category: "AI Voice"
-    affiliate_link: "https://murf.ai"
-    commission: "25%"
-    cookie_days: 60
-    geo: "Worldwide"
-    payout: "PayPal"
-    free_trial: true
-    active: true
-    notes: "Подать заявку на партнёрку"
-
-  - id: "simplified"
-    name: "Simplified"
-    description: "Универсальный AI для дизайна, копирайтинга и публикации контента"
-    category: "AI All-in-One"
-    affiliate_link: "https://simplified.com"
-    commission: "30%"
-    cookie_days: 30
-    geo: "Worldwide"
-    payout: "PayPal"
-    free_trial: true
-    active: true
-    notes: "Подать заявку на партнёрку"
-
-  - id: "vidnoz"
-    name: "Vidnoz AI"
-    description: "Бесплатный AI-генератор видео с аватарами и голосом"
-    category: "AI Video"
-    affiliate_link: "https://vidnoz.com"
-    commission: "25%"
-    cookie_days: 30
-    geo: "Worldwide"
-    payout: "PayPal"
-    free_trial: true
-    active: true
-    notes: "Подать заявку на партнёрку"
+    status: "pending"
+    notes: "Найти актуальную партнёрскую страницу"

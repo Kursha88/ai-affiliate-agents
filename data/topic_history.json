@@ -82,5 +82,11 @@
     "topic": "AI для создания видео",
     "format": "Новость AI",
     "product": "writesonic"
+  },
+  {
+    "date": "2026-06-22",
+    "topic": "AI для озвучки и голоса",
+    "format": "Лайфхак дня",
+    "product": "murf"
   }
 ]
