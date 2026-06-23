@@ -142,5 +142,11 @@
     "topic": "AI для подкастеров",
     "format": "Лайфхак дня",
     "product": "writesonic"
+  },
+  {
+    "date": "2026-06-23",
+    "topic": "AI для фрилансеров",
+    "format": "Вопрос и ответ",
+    "product": "elevenlabs"
   }
 ]
