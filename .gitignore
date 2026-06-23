@@ -14,11 +14,13 @@ __pycache__/
 .vscode/
 *.code-workspace
 
-# Данные и логи (управляются GitHub Actions)
+# Данные управляются GitHub Actions
 data/published_posts.csv
 data/topic_history.json
 data/analytics.csv
 data/content_queue.json
+
+# Картинки генерируются локально
 assets/output/
 
 # OS файлы
