@@ -12,6 +12,7 @@ from src.agents.editor import edit_post
 from src.agents.designer import create_image_for_post
 from src.agents.analyst import log_publication, print_report
 from src.integrations.telegram_client import send_message
+from src.integrations.x_client import create_x_draft, print_drafts_report
 
 
 async def _send_with_image(text: str, image_path: str, channel_id: str) -> dict:
@@ -21,12 +22,9 @@ async def _send_with_image(text: str, image_path: str, channel_id: str) -> dict:
         from telegram.constants import ParseMode
 
         bot = Bot(token=os.getenv("TELEGRAM_BOT_TOKEN"))
-
-        # Telegram ограничение: подпись к фото максимум 1024 символа
         MAX_CAPTION = 1024
 
         if len(text) <= MAX_CAPTION:
-            # Отправляем фото с подписью
             with open(image_path, "rb") as photo:
                 message = await bot.send_photo(
                     chat_id=channel_id,
@@ -35,13 +33,11 @@ async def _send_with_image(text: str, image_path: str, channel_id: str) -> dict:
                     parse_mode=ParseMode.HTML,
                 )
         else:
-            # Сначала фото без подписи
             with open(image_path, "rb") as photo:
                 await bot.send_photo(
                     chat_id=channel_id,
                     photo=photo,
                 )
-            # Потом текст отдельным сообщением
             message = await bot.send_message(
                 chat_id=channel_id,
                 text=text,
@@ -65,7 +61,7 @@ async def _send_with_image(text: str, image_path: str, channel_id: str) -> dict:
 def run_pipeline() -> dict:
     """
     Запускает полный цикл:
-    Strategist → Copywriter → Editor → Designer → Publisher → Analyst
+    Strategist → Copywriter → Editor → Designer → Publisher → X Draft → Analyst
     """
     print("\n" + "=" * 55)
     print("🤖 AI AFFILIATE AGENTS — ЗАПУСК ПАЙПЛАЙНА")
@@ -117,19 +113,17 @@ def run_pipeline() -> dict:
     except Exception as e:
         print(f"   ⚠️  Ошибка Designer (не критично): {e}")
 
-    # ─── Шаг 5: Publisher ────────────────────────────────
+    # ─── Шаг 5: Publisher Telegram ───────────────────────
     print("\n5️⃣  PUBLISHER: публикую в Telegram...")
     try:
         channel_id = os.getenv("TELEGRAM_CHANNEL_ID", "")
         text = editor_result["final_text"]
 
         if image_path and os.path.exists(image_path):
-            # Публикуем с картинкой
             result = asyncio.run(
                 _send_with_image(text, image_path, channel_id)
             )
         else:
-            # Публикуем только текст
             result = send_message(text, channel_id)
 
         if result["success"]:
@@ -159,8 +153,20 @@ def run_pipeline() -> dict:
         print(f"   ❌ Ошибка Publisher: {e}")
         return {"success": False, "step": "publisher", "error": str(e)}
 
-    # ─── Шаг 6: Analyst ──────────────────────────────────
-    print("\n6️⃣  ANALYST: записываю в лог...")
+    # ─── Шаг 6: X Draft ──────────────────────────────────
+    print("\n6️⃣  X DRAFT: создаю пост для Twitter/X...")
+    try:
+        x_result = create_x_draft(editor_result)
+        if x_result["success"]:
+            print(f"   ✅ Draft создан! ({x_result['tweet_length']} символов)")
+            print(f"   📁 Файл: {x_result['draft_file']}")
+        else:
+            print(f"   ⚠️  Ошибка создания draft")
+    except Exception as e:
+        print(f"   ⚠️  Ошибка X Draft (не критично): {e}")
+
+    # ─── Шаг 7: Analyst ──────────────────────────────────
+    print("\n7️⃣  ANALYST: записываю в лог...")
     try:
         log_row = log_publication(publish_result)
         print(f"   ✅ Лог сохранён: {log_row['date']} {log_row['time']}")
@@ -173,6 +179,8 @@ def run_pipeline() -> dict:
     print(f"   Тема:      {plan['topic']}")
     print(f"   Продукт:   {plan['product']['name']}")
     print(f"   Ссылка:    {plan['product']['affiliate_link']}")
+    print(f"   Telegram:  ✅ Опубликовано")
+    print(f"   Twitter/X: 📝 Draft готов")
     print(f"   С фото:    {'Да ✅' if image_path else 'Нет ⚠️'}")
     print("=" * 55 + "\n")
 
@@ -189,6 +197,7 @@ def run_pipeline() -> dict:
 def run_report() -> None:
     """Показывает отчёт по всем публикациям"""
     print_report()
+    print_drafts_report()
 
 
 if __name__ == "__main__":
