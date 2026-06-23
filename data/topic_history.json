@@ -112,41 +112,5 @@
     "topic": "AI для студентов",
     "format": "Проблема и решение",
     "product": "murf"
-  },
-  {
-    "date": "2026-06-23",
-    "topic": "No-code AI автоматизация",
-    "format": "Топ-5 инструментов",
-    "product": "pictory"
-  },
-  {
-    "date": "2026-06-23",
-    "topic": "AI для YouTube блогеров",
-    "format": "Новость AI",
-    "product": "castmagic"
-  },
-  {
-    "date": "2026-06-23",
-    "topic": "AI для озвучки и голоса",
-    "format": "Сравнение сервисов",
-    "product": "murf"
-  },
-  {
-    "date": "2026-06-23",
-    "topic": "AI для продаж и маркетинга",
-    "format": "Кейс использования",
-    "product": "murf"
-  },
-  {
-    "date": "2026-06-23",
-    "topic": "AI для подкастеров",
-    "format": "Лайфхак дня",
-    "product": "writesonic"
-  },
-  {
-    "date": "2026-06-23",
-    "topic": "AI для фрилансеров",
-    "format": "Вопрос и ответ",
-    "product": "elevenlabs"
   }
 ]
