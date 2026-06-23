@@ -84,9 +84,33 @@
     "product": "writesonic"
   },
   {
+    "date": "2026-06-20",
+    "topic": "Подборка AI-инструментов",
+    "format": "Пошаговая инструкция",
+    "product": "writesonic"
+  },
+  {
+    "date": "2026-06-21",
+    "topic": "Новости мира AI",
+    "format": "Обзор инструмента",
+    "product": "vidnoz"
+  },
+  {
+    "date": "2026-06-21",
+    "topic": "Лайфхаки с AI",
+    "format": "Личная рекомендация",
+    "product": "murf"
+  },
+  {
     "date": "2026-06-22",
-    "topic": "AI для озвучки и голоса",
+    "topic": "AI для автоматизации бизнеса",
     "format": "Лайфхак дня",
+    "product": "pictory"
+  },
+  {
+    "date": "2026-06-22",
+    "topic": "AI для студентов",
+    "format": "Проблема и решение",
     "product": "murf"
   }
 ]
