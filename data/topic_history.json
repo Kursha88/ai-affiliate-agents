@@ -130,5 +130,11 @@
     "topic": "AI для подкастеров",
     "format": "Пошаговая инструкция",
     "product": "writesonic"
+  },
+  {
+    "date": "2026-06-24",
+    "topic": "AI для озвучки и голоса",
+    "format": "Сравнение сервисов",
+    "product": "elevenlabs"
   }
 ]
