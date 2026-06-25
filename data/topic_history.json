@@ -142,5 +142,11 @@
     "topic": "AI для YouTube блогеров",
     "format": "Новость AI",
     "product": "elevenlabs"
+  },
+  {
+    "date": "2026-06-25",
+    "topic": "AI для фрилансеров",
+    "format": "Обзор инструмента",
+    "product": "replyio"
   }
 ]
