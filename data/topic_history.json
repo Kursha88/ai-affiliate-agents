@@ -154,5 +154,11 @@
     "topic": "AI для фрилансеров",
     "format": "Проблема и решение",
     "product": "mindstudio"
+  },
+  {
+    "date": "2026-06-26",
+    "topic": "Сравнение AI-сервисов",
+    "format": "Кейс использования",
+    "product": "elevenlabs"
   }
 ]
