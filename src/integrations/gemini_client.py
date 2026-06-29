@@ -1,9 +1,14 @@
 import os
 from typing import Optional, Dict
-
 from dotenv import load_dotenv
 
 load_dotenv()
+
+GEMINI_MODELS = [
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-2.5-flash",
+]
 
 
 def _generate_with_gemini(prompt: str) -> Optional[str]:
@@ -13,22 +18,39 @@ def _generate_with_gemini(prompt: str) -> Optional[str]:
         return None
 
     try:
-        import google.generativeai as genai
-
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(prompt)
-
-        text = getattr(response, "text", None)
-        if text and text.strip():
-            return text.strip()
-
-        print("[Gemini] Пустой ответ от модели")
-        return None
-
+        from google import genai
+        client = genai.Client(api_key=api_key)
     except Exception as exc:
-        print(f"[Gemini] Ошибка: {exc}")
+        print(f"[Gemini] Ошибка инициализации клиента: {exc}")
         return None
+
+    for model_name in GEMINI_MODELS:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt,
+            )
+            text = response.text
+            if text and text.strip():
+                print(f"[Gemini] Использую модель: {model_name}")
+                return text.strip()
+            else:
+                print(f"[Gemini] {model_name} — пустой ответ")
+
+        except Exception as exc:
+            err = str(exc)
+            if "429" in err or "RESOURCE_EXHAUSTED" in err:
+                print(f"[Gemini] {model_name} — лимит исчерпан, пробую следующую...")
+                continue
+            elif "404" in err or "NOT_FOUND" in err:
+                print(f"[Gemini] {model_name} — модель не найдена, пробую следующую...")
+                continue
+            else:
+                print(f"[Gemini] {model_name} — ошибка: {exc}")
+                continue
+
+    print("[Gemini] Все модели недоступны")
+    return None
 
 
 def _generate_with_groq(prompt: str) -> Optional[str]:
@@ -42,7 +64,7 @@ def _generate_with_groq(prompt: str) -> Optional[str]:
 
         client = Groq(api_key=api_key)
         completion = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="llama-3.3-70b-versatile",
             messages=[
                 {
                     "role": "system",
@@ -67,18 +89,19 @@ def _generate_with_groq(prompt: str) -> Optional[str]:
 
 def generate_ai_text(prompt: str) -> Dict[str, str]:
     """
-    Основной: Groq (быстрый, бесплатный, работает с Python 3.14)
-    Резервный: Gemini (когда починят совместимость с Python 3.14)
+    Основной: Gemini (пробует 3 модели по очереди)
+    Резервный: Groq llama-3.3-70b
     """
-    # Сначала пробуем Groq
-    text = _generate_with_groq(prompt)
-    if text:
-        return {"source": "groq", "text": text}
-
-    # Резервный — Gemini
+    # Сначала пробуем Gemini
     text = _generate_with_gemini(prompt)
     if text:
         return {"source": "gemini", "text": text}
+
+    # Резервный — Groq
+    print("[AI] Gemini недоступен, переключаюсь на Groq...")
+    text = _generate_with_groq(prompt)
+    if text:
+        return {"source": "groq", "text": text}
 
     return {
         "source": "fallback",
@@ -87,7 +110,7 @@ def generate_ai_text(prompt: str) -> Dict[str, str]:
 
 
 if __name__ == "__main__":
-    test_prompt = "Сгенерируй короткий дружелюбный пост в Telegram (3-5 предложений) о том, как AI экономит время."
+    test_prompt = "Сгенерируй короткий дружелюбный пост для Telegram (3-5 предложений) о том, как AI экономит время."
     result = generate_ai_text(test_prompt)
 
     print("\n=== AI TEST RESULT ===")

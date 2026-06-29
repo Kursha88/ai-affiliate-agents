@@ -1,6 +1,9 @@
 # Виртуальное окружение
 venv/
 env/
+.venv/
+
+# Секреты — НИКОГДА не пушить
 .env
 
 # Python кэш
@@ -14,14 +17,20 @@ __pycache__/
 .vscode/
 *.code-workspace
 
-# Данные управляются GitHub Actions
+# Данные — управляются локально
 data/published_posts.csv
 data/topic_history.json
 data/analytics.csv
 data/content_queue.json
+data/x_drafts.json
+data/drafts/
 
 # Картинки генерируются локально
 assets/output/
+data/images/
+*.png
+*.jpg
+*.jpeg
 
 # OS файлы
 .DS_Store

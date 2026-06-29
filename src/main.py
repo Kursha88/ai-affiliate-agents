@@ -79,11 +79,27 @@ def run_pipeline() -> dict:
         print(f"   ❌ Ошибка Strategist: {e}")
         return {"success": False, "step": "strategist", "error": str(e)}
 
-    # ─── Шаг 2: Copywriter ───────────────────────────────
+        # ─── Шаг 2: Copywriter ───────────────────────────────
     print("\n2️⃣  COPYWRITER: пишу пост...")
     try:
         copywriter_result = write_post(plan)
-        print(f"   ✅ Черновик готов ({len(copywriter_result['draft_text'])} символов)")
+
+        # Защита от fallback текста в канале
+        FALLBACK_MARKERS = [
+            "Не удалось сгенерировать",
+            "Проверь API ключи",
+            "fallback",
+        ]
+        draft = copywriter_result["draft_text"]
+        if any(marker in draft for marker in FALLBACK_MARKERS):
+            print(f"   ❌ AI вернул fallback текст — останавливаем пайплайн")
+            return {
+                "success": False,
+                "step": "copywriter",
+                "error": "AI вернул fallback. Проверь API ключи.",
+            }
+
+        print(f"   ✅ Черновик готов ({len(draft)} символов)")
         print(f"   ✅ AI провайдер: {copywriter_result['ai_source']}")
     except Exception as e:
         print(f"   ❌ Ошибка Copywriter: {e}")
@@ -153,17 +169,25 @@ def run_pipeline() -> dict:
         print(f"   ❌ Ошибка Publisher: {e}")
         return {"success": False, "step": "publisher", "error": str(e)}
 
-    # ─── Шаг 6: X Draft ──────────────────────────────────
-    print("\n6️⃣  X DRAFT: создаю пост для Twitter/X...")
+        # ─── Шаг 6: Twitter Writer ───────────────────────────
+    print("\n6️⃣  TWITTER WRITER: создаю вирусный твит для X...")
+    twitter_result = {"success": False, "tweet_text": ""}
     try:
-        x_result = create_x_draft(editor_result)
-        if x_result["success"]:
-            print(f"   ✅ Draft создан! ({x_result['tweet_length']} символов)")
-            print(f"   📁 Файл: {x_result['draft_file']}")
+        from src.agents.twitter_writer import write_twitter_post
+        twitter_result = write_twitter_post(
+            content_plan=plan,
+            telegram_text=editor_result["final_text"],
+        )
+        if twitter_result["success"]:
+            print(f"   ✅ Твит готов! ({twitter_result['tweet_length']} символов)")
+            print(f"   🐦 Формат: {twitter_result['twitter_format']}")
+            print(f"   🔗 CTA: {'Affiliate ✅' if twitter_result['using_affiliate_link'] else 'Telegram канал 📢'}")
+            if twitter_result["issues"]:
+                print(f"   ⚠️  Замечания: {twitter_result['issues']}")
         else:
-            print(f"   ⚠️  Ошибка создания draft")
+            print(f"   ⚠️  Twitter Writer не сработал")
     except Exception as e:
-        print(f"   ⚠️  Ошибка X Draft (не критично): {e}")
+        print(f"   ⚠️  Ошибка Twitter Writer (не критично): {e}")
 
     # ─── Шаг 7: Analyst ──────────────────────────────────
     print("\n7️⃣  ANALYST: записываю в лог...")
@@ -180,7 +204,7 @@ def run_pipeline() -> dict:
     print(f"   Продукт:   {plan['product']['name']}")
     print(f"   Ссылка:    {plan['product']['affiliate_link']}")
     print(f"   Telegram:  ✅ Опубликовано")
-    print(f"   Twitter/X: 📝 Draft готов")
+    print(f"   Twitter/X: {'✅ Твит готов' if twitter_result.get('success') else '⚠️ Пропущено'}")
     print(f"   С фото:    {'Да ✅' if image_path else 'Нет ⚠️'}")
     print("=" * 55 + "\n")
 
