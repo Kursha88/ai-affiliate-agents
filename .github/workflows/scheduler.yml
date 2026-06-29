@@ -30,7 +30,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-            - name: Create .env file
+      - name: Create .env file
         run: |
           echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
           echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> .env
@@ -38,6 +38,7 @@ jobs:
           echo "TELEGRAM_CHANNEL_ID=${{ secrets.TELEGRAM_CHANNEL_ID }}" >> .env
           echo "TELEGRAM_CHANNEL_USERNAME=${{ secrets.TELEGRAM_CHANNEL_USERNAME }}" >> .env
           echo "TELEGRAM_OWNER_ID=${{ secrets.TELEGRAM_OWNER_ID }}" >> .env
+          echo "TELEGRAM_ADMIN_CHAT_ID=${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}" >> .env
 
       - name: Ensure directory structure
         run: |
