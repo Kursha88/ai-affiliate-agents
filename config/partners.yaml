@@ -1,16 +1,145 @@
 partners:
 
+  # ============================================================
+  # АКТИВНЫЕ — ссылки работают, комиссия идёт
+  # ============================================================
+
+  - id: "canva"
+    name: "Canva"
+    description: "AI дизайн-платформа — создание графики, презентаций, видео без навыков дизайна"
+    category: "AI Design"
+    tags: ["дизайн", "графика", "презентации", "контент", "визуал"]
+    affiliate_link: "https://www.canva.com"
+    commission: "до 36%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "Impact"
+    free_trial: true
+    active: false
+    status: "closed"
+    notes: "Программа Canvassador закрыта для новых заявок."
+
+  - id: "copyai"
+    name: "Copy.ai"
+    description: "AI копирайтер — генерирует тексты, посты, рекламу и email за секунды"
+    category: "AI Writing"
+    tags: ["копирайтинг", "тексты", "реклама", "email", "контент"]
+    affiliate_link: "https://www.copy.ai/?via=YOUR_ID"
+    commission: "45%"
+    cookie_days: 60
+    geo: "Worldwide"
+    payout: "FirstPromoter"
+    free_trial: true
+    active: true
+    status: "active"
+    notes: "FirstPromoter. Высокая комиссия."
+
+  - id: "jasper"
+    name: "Jasper AI"
+    description: "AI платформа для маркетингового контента — статьи, реклама, SEO тексты"
+    category: "AI Writing"
+    tags: ["маркетинг", "копирайтинг", "SEO", "блог", "реклама", "продажи", "контент"]
+    affiliate_link: "https://jasper.ai?fpr=YOUR_ID"
+    commission: "25%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "FirstPromoter"
+    free_trial: true
+    active: true
+    status: "active"
+    notes: "Собственная программа."
+
+  - id: "grammarly"
+    name: "Grammarly"
+    description: "AI помощник для проверки и улучшения текстов на английском языке"
+    category: "AI Writing"
+    tags: ["грамматика", "английский", "тексты", "редактура", "writing"]
+    affiliate_link: "https://grammarly.com/referrals/YOUR_ID"
+    commission: "до $20 за регистрацию"
+    cookie_days: 90
+    geo: "Worldwide"
+    payout: "CJ Affiliate"
+    free_trial: true
+    active: true
+    status: "active"
+    notes: "CJ Affiliate. Огромная аудитория."
+
+  - id: "notion"
+    name: "Notion"
+    description: "Умная система для заметок, задач и базы знаний с AI-функциями"
+    category: "AI Productivity"
+    tags: ["продуктивность", "заметки", "задачи", "организация", "база знаний"]
+    affiliate_link: "https://notion.so/?r=YOUR_ID"
+    commission: "$10 за реферала"
+    cookie_days: 90
+    geo: "Worldwide"
+    payout: "Собственная"
+    free_trial: true
+    active: true
+    status: "active"
+    notes: "Собственная программа. Одобрение мгновенное."
+
+  - id: "synthesia"
+    name: "Synthesia"
+    description: "AI генератор видео с аватарами — создаёт профессиональные видео из текста"
+    category: "AI Video"
+    tags: ["видео", "аватар", "презентации", "обучение", "маркетинг"]
+    affiliate_link: "https://synthesia.io/?via=YOUR_ID"
+    commission: "25%"
+    cookie_days: 60
+    geo: "Worldwide"
+    payout: "Partnerstack"
+    free_trial: true
+    active: true
+    status: "active"
+    notes: "Partnerstack. Одобрение автоматическое."
+
+  - id: "loom"
+    name: "Loom"
+    description: "AI видео-мессенджер — записывай и отправляй видео вместо длинных писем"
+    category: "AI Video"
+    tags: ["видео", "коммуникация", "удалённая работа", "скринкаст", "команда"]
+    affiliate_link: "https://loom.com/?ref=YOUR_ID"
+    commission: "15%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "Impact"
+    free_trial: true
+    active: true
+    status: "active"
+    notes: "Impact платформа."
+
+  - id: "descript"
+    name: "Descript"
+    description: "AI редактор видео и подкастов — редактируй видео как текстовый документ"
+    category: "AI Video"
+    tags: ["видео", "подкасты", "редактирование", "транскрипция", "контент"]
+    affiliate_link: "https://descript.com/?lmref=YOUR_ID"
+    commission: "15%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "Собственная"
+    free_trial: true
+    active: true
+    status: "active"
+    notes: "Собственная программа."
+
+  # ============================================================
+  # PENDING — заявки поданы, ждём одобрения
+  # ============================================================
+
   - id: "elevenlabs"
     name: "ElevenLabs"
     description: "AI генератор голоса и озвучки — превращает текст в реалистичную речь"
     category: "AI Voice"
+    tags: ["голос", "озвучка", "аудио", "подкасты", "TTS"]
     affiliate_link: "https://elevenlabs.io"
     commission: "22%"
     cookie_days: 30
     geo: "Worldwide"
     payout: "PayPal"
     free_trial: true
-    active: true
+    active: false
     status: "pending"
     notes: "Заявка подана через PartnerStack. Ждём одобрения."
 
@@ -18,13 +147,14 @@ partners:
     name: "Castmagic"
     description: "AI инструмент который превращает аудио и видео в контент — посты, резюме, статьи"
     category: "AI Content"
+    tags: ["аудио", "видео", "контент", "подкасты", "транскрипция"]
     affiliate_link: "https://castmagic.io"
     commission: "40%"
     cookie_days: 30
     geo: "Worldwide"
     payout: "PayPal"
     free_trial: true
-    active: true
+    active: false
     status: "pending"
     notes: "Заявка подана через PartnerStack. Ждём одобрения."
 
@@ -32,13 +162,14 @@ partners:
     name: "Reply.io"
     description: "AI платформа для автоматизации продаж — email outreach, лидогенерация"
     category: "AI Sales"
+    tags: ["продажи", "email", "автоматизация", "лидогенерация", "outreach"]
     affiliate_link: "https://reply.io"
     commission: "15%"
     cookie_days: 30
     geo: "Worldwide"
     payout: "PayPal"
     free_trial: true
-    active: true
+    active: false
     status: "pending"
     notes: "Заявка подана через PartnerStack. Ждём одобрения."
 
@@ -46,13 +177,14 @@ partners:
     name: "MindStudio"
     description: "No-code платформа для создания AI агентов и автоматизации без программирования"
     category: "AI Automation"
+    tags: ["автоматизация", "no-code", "AI агенты", "workflow", "интеграции"]
     affiliate_link: "https://mindstudio.ai"
     commission: "20%"
     cookie_days: 30
     geo: "Worldwide"
     payout: "PayPal"
     free_trial: true
-    active: true
+    active: false
     status: "pending"
     notes: "Заявка подана через PartnerStack. Ждём одобрения."
 
@@ -60,13 +192,14 @@ partners:
     name: "Murf AI"
     description: "AI генератор голоса и озвучки для видео, подкастов и презентаций"
     category: "AI Voice"
+    tags: ["голос", "озвучка", "видео", "подкасты", "презентации"]
     affiliate_link: "https://murf.ai"
     commission: "25%"
     cookie_days: 60
     geo: "Worldwide"
     payout: "PayPal"
     free_trial: true
-    active: true
+    active: false
     status: "pending"
     notes: "Повторная заявка отправлена. Ждём одобрения."
 
@@ -74,13 +207,14 @@ partners:
     name: "Writesonic"
     description: "AI инструмент для написания текстов, статей, рекламных копий и SEO контента"
     category: "AI Writing"
+    tags: ["SEO", "статьи", "блог", "реклама", "копирайтинг"]
     affiliate_link: "https://writesonic.com"
     commission: "30%"
     cookie_days: 30
     geo: "Worldwide"
     payout: "PayPal"
     free_trial: true
-    active: true
+    active: false
     status: "pending"
     notes: "Найти актуальную партнёрскую страницу"
 
@@ -88,12 +222,13 @@ partners:
     name: "Pictory AI"
     description: "Превращает текст и статьи в короткие видео с помощью AI"
     category: "AI Video"
+    tags: ["видео", "контент", "статьи", "short", "маркетинг"]
     affiliate_link: "https://pictory.ai"
     commission: "20%"
     cookie_days: 30
     geo: "Worldwide"
     payout: "PayPal"
     free_trial: true
-    active: true
+    active: false
     status: "pending"
     notes: "Найти актуальную партнёрскую страницу"
