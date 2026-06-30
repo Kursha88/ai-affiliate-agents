@@ -68,7 +68,7 @@ partners:
     free_trial: true
     active: true
     status: "pending"
-    notes: "Заявка подана через PartnerStack. Ждём одобрения."
+    notes: "Повторная заявка отправлена. Ждём одобрения."
 
   - id: "writesonic"
     name: "Writesonic"
