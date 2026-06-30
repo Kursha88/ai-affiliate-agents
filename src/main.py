@@ -12,7 +12,7 @@ from src.agents.editor import edit_post
 from src.agents.designer import create_image_for_post
 from src.agents.analyst import log_publication, print_report
 from src.integrations.telegram_client import send_message
-from src.integrations.x_client import create_x_draft, print_drafts_report
+from src.integrations.x_client import print_drafts_report
 
 
 async def _send_with_image(text: str, image_path: str, channel_id: str) -> dict:
@@ -61,7 +61,8 @@ async def _send_with_image(text: str, image_path: str, channel_id: str) -> dict:
 def run_pipeline() -> dict:
     """
     Запускает полный цикл:
-    Strategist → Copywriter → Editor → Designer → Publisher → X Draft → Analyst
+    Strategist → Copywriter → Editor → Designer → Publisher
+    → Twitter Writer → Admin Notify → Analyst
     """
     print("\n" + "=" * 55)
     print("🤖 AI AFFILIATE AGENTS — ЗАПУСК ПАЙПЛАЙНА")
@@ -79,12 +80,12 @@ def run_pipeline() -> dict:
         print(f"   ❌ Ошибка Strategist: {e}")
         return {"success": False, "step": "strategist", "error": str(e)}
 
-        # ─── Шаг 2: Copywriter ───────────────────────────────
+    # ─── Шаг 2: Copywriter ───────────────────────────────
     print("\n2️⃣  COPYWRITER: пишу пост...")
     try:
         copywriter_result = write_post(plan)
 
-        # Защита от fallback текста в канале
+        # 🛡️ Защита от публикации fallback текста в канале
         FALLBACK_MARKERS = [
             "Не удалось сгенерировать",
             "Проверь API ключи",
@@ -169,7 +170,7 @@ def run_pipeline() -> dict:
         print(f"   ❌ Ошибка Publisher: {e}")
         return {"success": False, "step": "publisher", "error": str(e)}
 
-        # ─── Шаг 6: Twitter Writer ───────────────────────────
+    # ─── Шаг 6: Twitter Writer ───────────────────────────
     print("\n6️⃣  TWITTER WRITER: создаю вирусный твит для X...")
     twitter_result = {"success": False, "tweet_text": ""}
     try:
@@ -182,15 +183,32 @@ def run_pipeline() -> dict:
             print(f"   ✅ Твит готов! ({twitter_result['tweet_length']} символов)")
             print(f"   🐦 Формат: {twitter_result['twitter_format']}")
             print(f"   🔗 CTA: {'Affiliate ✅' if twitter_result['using_affiliate_link'] else 'Telegram канал 📢'}")
-            if twitter_result["issues"]:
+            if twitter_result.get("issues"):
                 print(f"   ⚠️  Замечания: {twitter_result['issues']}")
         else:
             print(f"   ⚠️  Twitter Writer не сработал")
     except Exception as e:
         print(f"   ⚠️  Ошибка Twitter Writer (не критично): {e}")
 
-    # ─── Шаг 7: Analyst ──────────────────────────────────
-    print("\n7️⃣  ANALYST: записываю в лог...")
+    # ─── Шаг 7: Admin Notify ─────────────────────────────
+    print("\n7️⃣  ADMIN NOTIFY: отправляю уведомление...")
+    admin_result = {"success": False}
+    try:
+        from src.integrations.telegram_admin import send_admin_notification
+        admin_result = send_admin_notification(
+            telegram_text=text,
+            tweet_result=twitter_result,
+            publish_result=publish_result,
+        )
+        if admin_result["success"]:
+            print(f"   ✅ Уведомление отправлено администратору!")
+        else:
+            print(f"   ⚠️  Ошибка уведомления: {admin_result.get('error', '')}")
+    except Exception as e:
+        print(f"   ⚠️  Ошибка Admin Notify (не критично): {e}")
+
+    # ─── Шаг 8: Analyst ──────────────────────────────────
+    print("\n8️⃣  ANALYST: записываю в лог...")
     try:
         log_row = log_publication(publish_result)
         print(f"   ✅ Лог сохранён: {log_row['date']} {log_row['time']}")
@@ -205,6 +223,7 @@ def run_pipeline() -> dict:
     print(f"   Ссылка:    {plan['product']['affiliate_link']}")
     print(f"   Telegram:  ✅ Опубликовано")
     print(f"   Twitter/X: {'✅ Твит готов' if twitter_result.get('success') else '⚠️ Пропущено'}")
+    print(f"   Admin:     {'✅ Уведомлён' if admin_result.get('success') else '⚠️ Пропущено'}")
     print(f"   С фото:    {'Да ✅' if image_path else 'Нет ⚠️'}")
     print("=" * 55 + "\n")
 
