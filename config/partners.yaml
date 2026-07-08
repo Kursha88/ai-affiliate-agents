@@ -4,6 +4,130 @@ partners:
   # АКТИВНЫЕ — ссылки работают, комиссия идёт
   # ============================================================
 
+  - id: "notta"
+    name: "Notta AI"
+    description: "AI транскрибатор — автоматически переводит аудио и видео встреч в текст и резюме"
+    category: "AI Productivity"
+    tags: ["транскрипция", "встречи", "аудио", "подкасты", "заметки", "продуктивность", "резюме"]
+    affiliate_link: "https://ypetp.com/g/7gbdp8tygu92bd20b454f50bb56640/"
+    commission: "30%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "Admitad"
+    free_trial: true
+    active: true
+    status: "active"
+    notes: "Admitad. Одобрена автоматически."
+
+  # ============================================================
+  # PENDING — ждём одобрения или замены YOUR_ID
+  # ============================================================
+
+  - id: "copyai"
+    name: "Copy.ai"
+    description: "AI копирайтер — генерирует тексты, посты, рекламу и email за секунды"
+    category: "AI Writing"
+    tags: ["копирайтинг", "тексты", "реклама", "email", "контент"]
+    affiliate_link: "https://www.copy.ai/?via=YOUR_ID"
+    commission: "45%"
+    cookie_days: 60
+    geo: "Worldwide"
+    payout: "FirstPromoter"
+    free_trial: true
+    active: false
+    status: "pending"
+    notes: "Ждём одобрения FirstPromoter. YOUR_ID нужно заменить."
+
+  - id: "jasper"
+    name: "Jasper AI"
+    description: "AI платформа для маркетингового контента — статьи, реклама, SEO тексты"
+    category: "AI Writing"
+    tags: ["маркетинг", "копирайтинг", "SEO", "блог", "реклама", "продажи", "контент"]
+    affiliate_link: "https://jasper.ai?fpr=YOUR_ID"
+    commission: "25%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "FirstPromoter"
+    free_trial: true
+    active: false
+    status: "pending"
+    notes: "Ждём одобрения. YOUR_ID нужно заменить."
+
+  - id: "grammarly"
+    name: "Grammarly"
+    description: "AI помощник для проверки и улучшения текстов на английском языке"
+    category: "AI Writing"
+    tags: ["грамматика", "английский", "тексты", "редактура", "writing"]
+    affiliate_link: "https://grammarly.com/referrals/YOUR_ID"
+    commission: "до $20 за регистрацию"
+    cookie_days: 90
+    geo: "Worldwide"
+    payout: "CJ Affiliate"
+    free_trial: true
+    active: false
+    status: "pending"
+    notes: "Отказ на Impact. Ищем альтернативу."
+
+  - id: "notion"
+    name: "Notion"
+    description: "Умная система для заметок, задач и базы знаний с AI-функциями"
+    category: "AI Productivity"
+    tags: ["продуктивность", "заметки", "задачи", "организация", "база знаний"]
+    affiliate_link: "https://notion.so/?r=YOUR_ID"
+    commission: "$10 за реферала"
+    cookie_days: 90
+    geo: "Worldwide"
+    payout: "Собственная"
+    free_trial: true
+    active: false
+    status: "pending"
+    notes: "Отказ. Ищем альтернативу."
+
+  - id: "synthesia"
+    name: "Synthesia"
+    description: "AI генератор видео с аватарами — создаёт профессиональные видео из текста"
+    category: "AI Video"
+    tags: ["видео", "аватар", "презентации", "обучение", "маркетинг"]
+    affiliate_link: "https://synthesia.io/?via=YOUR_ID"
+    commission: "25%"
+    cookie_days: 60
+    geo: "Worldwide"
+    payout: "Partnerstack"
+    free_trial: true
+    active: false
+    status: "pending"
+    notes: "YOUR_ID нужно заменить."
+
+  - id: "loom"
+    name: "Loom"
+    description: "AI видео-мессенджер — записывай и отправляй видео вместо длинных писем"
+    category: "AI Video"
+    tags: ["видео", "коммуникация", "удалённая работа", "скринкаст", "команда"]
+    affiliate_link: "https://loom.com/?ref=YOUR_ID"
+    commission: "15%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "Impact"
+    free_trial: true
+    active: false
+    status: "pending"
+    notes: "YOUR_ID нужно заменить."
+
+  - id: "descript"
+    name: "Descript"
+    description: "AI редактор видео и подкастов — редактируй видео как текстовый документ"
+    category: "AI Video"
+    tags: ["видео", "подкасты", "редактирование", "транскрипция", "контент"]
+    affiliate_link: "https://descript.com/?lmref=YOUR_ID"
+    commission: "15%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "Собственная"
+    free_trial: true
+    active: false
+    status: "pending"
+    notes: "YOUR_ID нужно заменить."
+
   - id: "canva"
     name: "Canva"
     description: "AI дизайн-платформа — создание графики, презентаций, видео без навыков дизайна"
@@ -18,115 +142,6 @@ partners:
     active: false
     status: "closed"
     notes: "Программа Canvassador закрыта для новых заявок."
-
-  - id: "copyai"
-    name: "Copy.ai"
-    description: "AI копирайтер — генерирует тексты, посты, рекламу и email за секунды"
-    category: "AI Writing"
-    tags: ["копирайтинг", "тексты", "реклама", "email", "контент"]
-    affiliate_link: "https://www.copy.ai/?via=YOUR_ID"
-    commission: "45%"
-    cookie_days: 60
-    geo: "Worldwide"
-    payout: "FirstPromoter"
-    free_trial: true
-    active: true
-    status: "active"
-    notes: "FirstPromoter. Высокая комиссия."
-
-  - id: "jasper"
-    name: "Jasper AI"
-    description: "AI платформа для маркетингового контента — статьи, реклама, SEO тексты"
-    category: "AI Writing"
-    tags: ["маркетинг", "копирайтинг", "SEO", "блог", "реклама", "продажи", "контент"]
-    affiliate_link: "https://jasper.ai?fpr=YOUR_ID"
-    commission: "25%"
-    cookie_days: 30
-    geo: "Worldwide"
-    payout: "FirstPromoter"
-    free_trial: true
-    active: true
-    status: "active"
-    notes: "Собственная программа."
-
-  - id: "grammarly"
-    name: "Grammarly"
-    description: "AI помощник для проверки и улучшения текстов на английском языке"
-    category: "AI Writing"
-    tags: ["грамматика", "английский", "тексты", "редактура", "writing"]
-    affiliate_link: "https://grammarly.com/referrals/YOUR_ID"
-    commission: "до $20 за регистрацию"
-    cookie_days: 90
-    geo: "Worldwide"
-    payout: "CJ Affiliate"
-    free_trial: true
-    active: true
-    status: "active"
-    notes: "CJ Affiliate. Огромная аудитория."
-
-  - id: "notion"
-    name: "Notion"
-    description: "Умная система для заметок, задач и базы знаний с AI-функциями"
-    category: "AI Productivity"
-    tags: ["продуктивность", "заметки", "задачи", "организация", "база знаний"]
-    affiliate_link: "https://notion.so/?r=YOUR_ID"
-    commission: "$10 за реферала"
-    cookie_days: 90
-    geo: "Worldwide"
-    payout: "Собственная"
-    free_trial: true
-    active: true
-    status: "active"
-    notes: "Собственная программа. Одобрение мгновенное."
-
-  - id: "synthesia"
-    name: "Synthesia"
-    description: "AI генератор видео с аватарами — создаёт профессиональные видео из текста"
-    category: "AI Video"
-    tags: ["видео", "аватар", "презентации", "обучение", "маркетинг"]
-    affiliate_link: "https://synthesia.io/?via=YOUR_ID"
-    commission: "25%"
-    cookie_days: 60
-    geo: "Worldwide"
-    payout: "Partnerstack"
-    free_trial: true
-    active: true
-    status: "active"
-    notes: "Partnerstack. Одобрение автоматическое."
-
-  - id: "loom"
-    name: "Loom"
-    description: "AI видео-мессенджер — записывай и отправляй видео вместо длинных писем"
-    category: "AI Video"
-    tags: ["видео", "коммуникация", "удалённая работа", "скринкаст", "команда"]
-    affiliate_link: "https://loom.com/?ref=YOUR_ID"
-    commission: "15%"
-    cookie_days: 30
-    geo: "Worldwide"
-    payout: "Impact"
-    free_trial: true
-    active: true
-    status: "active"
-    notes: "Impact платформа."
-
-  - id: "descript"
-    name: "Descript"
-    description: "AI редактор видео и подкастов — редактируй видео как текстовый документ"
-    category: "AI Video"
-    tags: ["видео", "подкасты", "редактирование", "транскрипция", "контент"]
-    affiliate_link: "https://descript.com/?lmref=YOUR_ID"
-    commission: "15%"
-    cookie_days: 30
-    geo: "Worldwide"
-    payout: "Собственная"
-    free_trial: true
-    active: true
-    status: "active"
-    notes: "Собственная программа."
-
-  # ============================================================
-  # PENDING — заявки поданы, ждём одобрения
-  # ============================================================
 
   - id: "elevenlabs"
     name: "ElevenLabs"
@@ -216,7 +231,7 @@ partners:
     free_trial: true
     active: false
     status: "pending"
-    notes: "Найти актуальную партнёрскую страницу"
+    notes: "Найти актуальную партнёрскую страницу."
 
   - id: "pictory"
     name: "Pictory AI"
@@ -231,4 +246,4 @@ partners:
     free_trial: true
     active: false
     status: "pending"
-    notes: "Найти актуальную партнёрскую страницу"
+    notes: "Найти актуальную партнёрскую страницу."
