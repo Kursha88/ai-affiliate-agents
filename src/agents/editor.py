@@ -26,12 +26,6 @@ FORBIDDEN_PHRASES = [
     "пассивный доход гарантирован",
 ]
 
-DISCLOSURE = (
-    "\n\n⚠️ <i>Ссылка может быть партнёрской. "
-    "Если вы зарегистрируетесь по ней, автор может получить "
-    "небольшую комиссию — без доплаты для вас.</i>"
-)
-
 
 def _remove_markdown(text: str) -> str:
     """
@@ -86,15 +80,7 @@ def _check_link_present(text: str, affiliate_link: str) -> bool:
 
 def _fix_bullets(text: str) -> str:
     """Заменяет разные виды буллитов на единый стиль"""
-    # Заменяем - буллиты на •
     text = re.sub(r'^[\-–—]\s+', '• ', text, flags=re.MULTILINE)
-    return text
-
-
-def _add_disclosure(text: str) -> str:
-    """Добавляет пометку о партнёрской ссылке"""
-    if "партнёрской" not in text and "партнерской" not in text:
-        text += DISCLOSURE
     return text
 
 
@@ -118,7 +104,6 @@ def _trim_if_too_long(text: str, max_length: int = 3800) -> str:
     if len(text) <= max_length:
         return text
 
-    # Ищем последнюю точку перед лимитом
     trimmed = text[:max_length]
     last_dot = max(
         trimmed.rfind('.'),
@@ -162,17 +147,14 @@ def edit_post(copywriter_result: Dict) -> Dict:
         issues.append(f"Ссылка {affiliate_link} не найдена в тексте")
         text += f"\n\n🔗 {affiliate_link}"
 
-    # 6. Добавляем пометку о партнёрской ссылке
-    text = _add_disclosure(text)
-
-    # 7. Обрезаем если слишком длинный
+    # 6. Обрезаем если слишком длинный
     text = _trim_if_too_long(text)
 
-    # 8. Убираем лишние пробелы и переносы
+    # 7. Убираем лишние пробелы и переносы
     text = re.sub(r'\n{3,}', '\n\n', text)
     text = text.strip()
 
-    # 9. Проверяем длину
+    # 8. Проверяем длину
     length_check = _check_length(text)
     if length_check["warning"]:
         issues.append(length_check["warning"])

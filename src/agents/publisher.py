@@ -1,43 +1,46 @@
 from typing import Dict
+from src.agents.base_publisher import BasePublisher
 from src.integrations.telegram_client import send_message
+
+
+class TelegramPublisher(BasePublisher):
+    """
+    Публикатор для Telegram канала.
+    """
+    platform = "telegram"
+    max_length = 4096
+    supports_markdown = True
+    supports_images = True
+
+    def format_content(self, editor_result: Dict) -> str:
+        """Telegram поддерживает полный текст как есть."""
+        return editor_result["final_text"]
+
+    def publish(self, content: str, editor_result: Dict) -> Dict:
+        """Отправляет сообщение в Telegram канал."""
+        result = send_message(content)
+
+        if result["success"]:
+            return self._success_result(
+                editor_result=editor_result,
+                message_id=result["message_id"],
+                channel=result["channel"],
+                final_text=content,
+            )
+        else:
+            return self._error_result(
+                error=result["error"],
+                editor_result=editor_result,
+            )
 
 
 def publish_post(editor_result: Dict) -> Dict:
     """
-    Публикует готовый пост в Telegram.
-    Принимает результат от Editor.
+    Обратная совместимость — старый интерфейс.
+    Используется в main.py и других местах.
     """
-    if not editor_result.get("ready"):
-        return {
-            "success": False,
-            "error": f"Пост не готов: {editor_result.get('issues')}",
-            "plan": editor_result["plan"],
-        }
-
-    text = editor_result["final_text"]
-    plan = editor_result["plan"]
-
-    # Публикуем в Telegram
-    result = send_message(text)
-
-    if result["success"]:
-        return {
-            "success": True,
-            "platform": "telegram",
-            "message_id": result["message_id"],
-            "channel": result["channel"],
-            "plan": plan,
-            "final_text": text,
-            "length": editor_result["length"],
-            "ai_source": editor_result["ai_source"],
-        }
-    else:
-        return {
-            "success": False,
-            "error": result["error"],
-            "plan": plan,
-            "final_text": text,
-        }
+    publisher = TelegramPublisher()
+    return publisher.publish_from_editor(editor_result)
 
 
 if __name__ == "__main__":
@@ -45,7 +48,8 @@ if __name__ == "__main__":
     from src.agents.copywriter import write_post
     from src.agents.editor import edit_post
 
-    print("=== PUBLISHER TEST ===\n")
+    print("=== TELEGRAM PUBLISHER TEST ===\n")
+
     print("1️⃣  Strategist: создаёт план...")
     plan = create_content_plan()
     print(f"   Тема: {plan['topic']}")
@@ -65,12 +69,14 @@ if __name__ == "__main__":
     print("\n" + "=" * 50)
     if result["success"]:
         print(f"✅ ПОСТ ОПУБЛИКОВАН!")
-        print(f"📱 Канал: {result['channel']}")
+        print(f"📱 Платформа: {result['platform']}")
+        print(f"📢 Канал: {result['channel']}")
         print(f"🆔 ID сообщения: {result['message_id']}")
-        print(f"📝 Тема: {result['plan']['topic']}")
-        print(f"🛍️  Продукт: {result['plan']['product']['name']}")
+        print(f"📝 Тема: {result['topic']}")
+        print(f"🛍️  Продукт: {result['product']}")
+        print(f"🔗 Ссылка: {result['affiliate_link']}")
         print(f"📏 Длина: {result['length']} символов")
+        print(f"⏰ Время: {result['published_at']}")
     else:
-        print(f"❌ ОШИБКА ПУБЛИКАЦИИ")
-        print(f"Причина: {result['error']}")
+        print(f"❌ ОШИБКА: {result['error']}")
     print("=" * 50)
