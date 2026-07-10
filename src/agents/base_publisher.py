@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict
+from typing import Dict, Optional
 from datetime import datetime
 
 
@@ -15,7 +15,11 @@ class BasePublisher(ABC):
     supports_markdown: bool = False
     supports_images: bool = False
 
-    def publish_from_editor(self, editor_result: Dict) -> Dict:
+    def publish_from_editor(
+        self,
+        editor_result: Dict,
+        image_path: Optional[str] = None,
+    ) -> Dict:
         """
         Главный метод — принимает результат Editor
         и публикует на платформу.
@@ -38,7 +42,7 @@ class BasePublisher(ABC):
 
         # Публикуем
         try:
-            result = self.publish(content, editor_result)
+            result = self.publish(content, editor_result, image_path)
         except Exception as e:
             return self._error_result(
                 error=f"Ошибка публикации: {str(e)}",
@@ -56,7 +60,12 @@ class BasePublisher(ABC):
         pass
 
     @abstractmethod
-    def publish(self, content: str, editor_result: Dict) -> Dict:
+    def publish(
+        self,
+        content: str,
+        editor_result: Dict,
+        image_path: Optional[str] = None,
+    ) -> Dict:
         """
         Отправляет контент на платформу.
         Возвращает стандартный словарь результата.
