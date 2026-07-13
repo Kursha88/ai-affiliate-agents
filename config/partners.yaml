@@ -8,7 +8,7 @@ partners:
     name: "Notta AI"
     description: "AI транскрибатор — автоматически переводит аудио и видео встреч в текст и резюме"
     category: "AI Productivity"
-    tags: ["транскрипция", "встречи", "аудио", "подкасты", "заметки", "продуктивность", "резюме"]
+    tags: ["транскрипция", "встречи", "аудио", "подкасты", "заметки", "продуктивность", "резюме", "видео", "запись"]
     affiliate_link: "https://ypetp.com/g/7gbdp8tygu92bd20b454f50bb56640/"
     commission: "30%"
     cookie_days: 30
@@ -19,9 +19,54 @@ partners:
     status: "active"
     notes: "Admitad. Одобрена автоматически."
 
+  - id: "presenti"
+    name: "Presenti AI"
+    description: "AI конструктор презентаций — создаёт слайды из текста, PDF, URL и документов за секунды"
+    category: "AI Design"
+    tags: ["презентации", "слайды", "дизайн", "офис", "продуктивность", "контент", "визуал", "документы"]
+    affiliate_link: "https://rcpsj.com/g/2a9jab3pxr92bd20b454d2e5b365aa/"
+    commission: "25.20%"
+    cookie_days: 35
+    geo: "Worldwide"
+    payout: "Admitad"
+    free_trial: true
+    active: true
+    status: "active"
+    notes: "Admitad. Approval rate 100%."
+
+  - id: "boardmix"
+    name: "Boardmix"
+    description: "AI онлайн-доска для командной работы — майндмапы, флоучарты, презентации и Kanban в реальном времени"
+    category: "AI Productivity"
+    tags: ["командная работа", "доска", "майндмап", "презентации", "коллаборация", "продуктивность", "дизайн", "визуал", "планирование", "бизнес"]
+    affiliate_link: "https://axavl.com/g/3tevoaw5qq92bd20b454d12233f6f4/"
+    commission: "32%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "Admitad"
+    free_trial: true
+    active: true
+    status: "active"
+    notes: "Admitad. Approval rate 98%."
+
   # ============================================================
-  # PENDING — ждём одобрения или замены YOUR_ID
+  # PENDING — ждём одобрения
   # ============================================================
+
+  - id: "invideo"
+    name: "InVideo AI"
+    description: "AI видео редактор — создаёт профессиональные видео из текста за минуты"
+    category: "AI Video"
+    tags: ["видео", "редактор", "контент", "маркетинг", "YouTube", "short", "реклама"]
+    affiliate_link: "https://invideo.io"
+    commission: "16.24-32.49%"
+    cookie_days: 30
+    geo: "Worldwide"
+    payout: "Admitad"
+    free_trial: true
+    active: false
+    status: "pending"
+    notes: "Заявка подана. Ждём одобрения. Approval rate 100%."
 
   - id: "copyai"
     name: "Copy.ai"
