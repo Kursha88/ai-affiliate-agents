@@ -51,7 +51,12 @@ async def _send_admin_notification_async(
 
         # ─── Сообщение 1: Карточка публикации ────────────────
         image_label = "✅ Да" if has_image else "❌ Нет (нативный текст)"
-        pinterest_label = f"✅ Создан (<a href='{pin_url}'>открыть</a>)" if pin_url else ("❌ Ошибка" if pin_error else "⚪ Не настроен")
+        if pin_url:
+            pinterest_label = f"✅ Создан (<a href='{pin_url}'>открыть</a>)"
+        elif pin_error:
+            pinterest_label = f"❌ Ошибка: <code>{pin_error[:150]}</code>"
+        else:
+            pinterest_label = "⚪ Не настроен"
 
         card_text = (
             f"🚀 <b>НОВЫЙ ПОСТ В TELEGRAM ОПУБЛИКОВАН!</b>\n"
