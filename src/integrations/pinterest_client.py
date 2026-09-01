@@ -1,8 +1,10 @@
 """
 Pinterest API v5 клиент — автопостинг пинов со ссылкой на Telegram-канал.
+Поддерживает прямую загрузку локальных изображений через Base64.
 """
 
 import os
+import base64
 import requests
 from typing import Optional, Dict
 from dotenv import load_dotenv
@@ -26,10 +28,7 @@ def create_pin(
 ) -> Dict:
     """
     Создает новый Пин на Pinterest через API v5.
-
-    Требуемые переменные окружения:
-      PINTEREST_ACCESS_TOKEN: Access Token с правами boards:read, pins:read, pins:write
-      PINTEREST_BOARD_ID: ID доски, куда публиковать пины
+    Поддерживает локальные файлы картинок (.png, .jpg) и URL.
     """
     token = os.getenv("PINTEREST_ACCESS_TOKEN", "").strip()
     board_id = os.getenv("PINTEREST_BOARD_ID", "").strip()
@@ -48,37 +47,52 @@ def create_pin(
             "Content-Type": "application/json",
         }
 
-        # Если передана локальная картинка — в Pinterest API v5 передается media_source
+        # Определяем тип источника медиа
+        media_source = {}
+        if image_url_or_path and os.path.exists(image_url_or_path):
+            with open(image_url_or_path, "rb") as img_file:
+                b64_data = base64.b64encode(img_file.read()).decode("utf-8")
+            media_source = {
+                "source_type": "image_base64",
+                "content_type": "image/png",
+                "data": b64_data,
+            }
+        elif image_url_or_path and image_url_or_path.startswith("http"):
+            media_source = {
+                "source_type": "image_url",
+                "url": image_url_or_path,
+            }
+        else:
+            return {"success": False, "error": "Нет валидного изображения для создания Пина"}
+
         payload = {
             "board_id": board_id,
             "title": title[:100],
             "description": f"{description[:450]}\n\nПодробнее в Telegram: {target_link}",
             "link": target_link,
-            "media_source": {
-                "source_type": "image_url",
-                "url": image_url_or_path if image_url_or_path.startswith("http") else "",
-            }
+            "media_source": media_source,
         }
 
-        resp = requests.post(url, headers=headers, json=payload, timeout=20)
+        resp = requests.post(url, headers=headers, json=payload, timeout=25)
         if resp.status_code in [200, 201]:
             data = resp.json()
             pin_id = data.get("id")
-            print(f"[Pinterest] ✅ Пин создан! ID: {pin_id}")
+            print(f"[Pinterest] ✅ Пин успешно создан! ID: {pin_id}")
             return {
                 "success": True,
                 "pin_id": pin_id,
                 "url": f"https://www.pinterest.com/pin/{pin_id}",
             }
         else:
-            print(f"[Pinterest] ❌ HTTP {resp.status_code}: {resp.text}")
+            err_text = resp.text
+            print(f"[Pinterest] ❌ HTTP {resp.status_code}: {err_text}")
             return {
                 "success": False,
-                "error": f"Pinterest HTTP {resp.status_code}: {resp.text}",
+                "error": f"HTTP {resp.status_code}: {err_text[:200]}",
             }
 
     except Exception as e:
-        print(f"[Pinterest] Ошибка: {e}")
+        print(f"[Pinterest] Ошибка запроса: {e}")
         return {"success": False, "error": str(e)}
 
 
