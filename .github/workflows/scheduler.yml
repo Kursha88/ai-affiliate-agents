@@ -2,9 +2,9 @@ name: AI Affiliate Pipeline
 
 on:
   schedule:
-    - cron: "0 7 * * *"
-    - cron: "0 16 * * *"
-  workflow_dispatch:
+    - cron: "0 7 * * *"   # 10:00 МСК (UTC+3)
+    - cron: "0 16 * * *"  # 19:00 МСК (UTC+3)
+  workflow_dispatch:       # ручной запуск кнопкой в GitHub
 
 jobs:
   run-pipeline:
@@ -39,11 +39,17 @@ jobs:
           echo "TELEGRAM_CHANNEL_USERNAME=${{ secrets.TELEGRAM_CHANNEL_USERNAME }}" >> .env
           echo "TELEGRAM_OWNER_ID=${{ secrets.TELEGRAM_OWNER_ID }}" >> .env
           echo "TELEGRAM_ADMIN_CHAT_ID=${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}" >> .env
+          echo "TWITTER_API_KEY=${{ secrets.TWITTER_API_KEY }}" >> .env
+          echo "TWITTER_API_SECRET=${{ secrets.TWITTER_API_SECRET }}" >> .env
+          echo "TWITTER_ACCESS_TOKEN=${{ secrets.TWITTER_ACCESS_TOKEN }}" >> .env
+          echo "TWITTER_ACCESS_SECRET=${{ secrets.TWITTER_ACCESS_SECRET }}" >> .env
+          echo "PIPELINE_MODE=growth" >> .env
 
       - name: Ensure directory structure
         run: |
           mkdir -p assets/output
           mkdir -p data
+          mkdir -p data/logs
 
       - name: Initialize data files
         run: |

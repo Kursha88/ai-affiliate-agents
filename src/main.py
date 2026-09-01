@@ -1,25 +1,46 @@
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, date
 
 from src.core.config import Config
 from src.utils.logger import get_logger
 from src.utils.validators import is_fallback_text, validate_content_plan
 
+from src.agents.news_hunter import get_top_ai_news, get_fallback_topic
 from src.agents.strategist import create_content_plan
 from src.agents.copywriter import write_post
 from src.agents.editor import edit_post
 from src.agents.designer import create_image_for_post
 from src.agents.publisher import publish_post
 from src.agents.analyst import log_publication, print_report
-from src.integrations.x_client import print_drafts_report
+from src.integrations.x_client import print_drafts_report, is_twitter_configured
+
+
+def _already_published_today() -> bool:
+    """
+    Защита от дублей: проверяет публиковали ли уже сегодня.
+    Читает data/published_posts.csv.
+    """
+    posts_file = Config.POSTS_FILE
+    if not os.path.exists(posts_file):
+        return False
+
+    today_str = date.today().strftime("%Y-%m-%d")
+
+    try:
+        with open(posts_file, "r", encoding="utf-8") as f:
+            content = f.read()
+            # Проверяем есть ли сегодняшняя дата в файле
+            return today_str in content
+    except Exception:
+        return False
 
 
 def run_pipeline() -> dict:
     """
     Запускает полный цикл:
-    Strategist → Copywriter → Editor → Designer → Publisher
-    → Twitter Writer → Admin Notify → Analyst
+    NewsHunter → Strategist → Copywriter → Editor → Designer
+    → Publisher → Twitter Writer → Admin Notify → Analyst
     """
     log = get_logger()
     Config.ensure_dirs()
@@ -33,19 +54,42 @@ def run_pipeline() -> dict:
             log.error(issue)
         return {"success": False, "step": "config", "error": validation["issues"]}
 
-    # ─── Шаг 1: Strategist ───────────────────────────────
-    log.step(1, "STRATEGIST: выбираю тему и продукт")
+    # ─── Защита от дублей ─────────────────────────────────
+    if _already_published_today():
+        log.warning("Сегодня уже была публикация — пропускаю (защита от дублей)")
+        log.warning("Чтобы принудительно запустить — удали сегодняшнюю строку из data/published_posts.csv")
+        return {"success": False, "step": "dedup", "error": "Already published today"}
+
+    # ─── Шаг 0: NewsHunter ───────────────────────────────
+    log.step(0, "NEWS HUNTER: ищу свежие AI-новости")
+    news_item = None
     try:
-        plan = create_content_plan()
+        news_list = get_top_ai_news(count=3)
+        if news_list:
+            news_item = news_list[0]  # Берём самую горячую новость
+            log.success(f"Новость: {news_item['title'][:60]}...")
+            log.success(f"Источник: {news_item['source']} | Возраст: {news_item['age_hours']}ч")
+        else:
+            log.warning("Новости не найдены — используем fallback тему")
+            news_item = get_fallback_topic()
+    except Exception as e:
+        log.warning(f"Ошибка NewsHunter (не критично): {e}")
+        news_item = get_fallback_topic()
+
+    # ─── Шаг 1: Strategist ───────────────────────────────
+    log.step(1, "STRATEGIST: формирую план")
+    try:
+        plan = create_content_plan(news_item=news_item)
 
         plan_validation = validate_content_plan(plan)
         if not plan_validation["valid"]:
             log.error(f"Невалидный план: {plan_validation['issues']}")
             return {"success": False, "step": "strategist", "error": str(plan_validation["issues"])}
 
-        log.success(f"Тема:    {plan['topic']}")
+        log.success(f"Режим:   {plan.get('mode', 'growth')}")
+        log.success(f"Тема:    {plan['topic'][:60]}")
         log.success(f"Формат:  {plan['format']}")
-        log.success(f"Продукт: {plan['product']['name']}")
+        log.success(f"CTA:     {plan['cta_link']}")
     except Exception as e:
         log.error(f"Ошибка Strategist: {e}")
         return {"success": False, "step": "strategist", "error": str(e)}
@@ -86,11 +130,16 @@ def run_pipeline() -> dict:
     log.step(4, "DESIGNER: создаю картинку")
     image_path = None
     try:
-        image_path = create_image_for_post(plan)
-        if image_path:
-            log.success(f"Картинка создана: {image_path}")
+        # 30% постов публикуем без картинки — выглядит человечнее
+        import random
+        if random.random() > 0.3:
+            image_path = create_image_for_post(plan)
+            if image_path:
+                log.success(f"Картинка создана: {image_path}")
+            else:
+                log.skip("Картинка не создана — публикуем без фото")
         else:
-            log.skip("Картинка не создана — публикуем без фото")
+            log.skip("Публикуем без фото (нативный вид)")
     except Exception as e:
         log.warning(f"Ошибка Designer (не критично): {e}")
 
@@ -114,27 +163,40 @@ def run_pipeline() -> dict:
         log.error(f"Ошибка Publisher: {e}")
         return {"success": False, "step": "publisher", "error": str(e)}
 
-    # ─── Шаг 6: Twitter Writer ───────────────────────────
-    log.step(6, "TWITTER WRITER: создаю вирусный твит для X")
-    twitter_result = {"success": False, "tweet_text": ""}
+    # ─── Шаг 6: Twitter Writer + Автопубликация ───────────
+    log.step(6, "TWITTER: создаю и публикую твит")
+    twitter_result = {"success": False, "tweet_text": "", "auto_published": False}
     try:
         from src.agents.twitter_writer import write_twitter_post
-        twitter_result = write_twitter_post(
+        from src.integrations.x_client import post_tweet
+
+        twitter_draft = write_twitter_post(
             content_plan=plan,
             telegram_text=editor_result["final_text"],
         )
-        if twitter_result["success"]:
-            log.success(f"Твит готов! ({twitter_result['tweet_length']} символов)")
-            log.success(f"Формат: {twitter_result['twitter_format']}")
-            log.success(
-                f"CTA: {'Affiliate ✅' if twitter_result['using_affiliate_link'] else 'Telegram канал 📢'}"
-            )
-            if twitter_result.get("issues"):
-                log.warning(f"Замечания: {twitter_result['issues']}")
+
+        if twitter_draft["success"]:
+            tweet_text = twitter_draft["tweet_text"]
+            log.success(f"Твит готов ({twitter_draft['tweet_length']} символов)")
+
+            # Автопубликация если ключи настроены
+            if is_twitter_configured():
+                log.step(6, "TWITTER: автопубликация...")
+                pub_result = post_tweet(tweet_text)
+                if pub_result["success"]:
+                    log.success(f"Твит опубликован! ID: {pub_result.get('tweet_id', '')}")
+                    twitter_result = {**twitter_draft, "auto_published": True, **pub_result}
+                else:
+                    log.warning(f"Ошибка автопубликации: {pub_result['error']}")
+                    twitter_result = {**twitter_draft, "auto_published": False}
+            else:
+                log.skip("Twitter ключи не настроены — твит только в черновике")
+                twitter_result = {**twitter_draft, "auto_published": False}
         else:
             log.skip("Twitter Writer не сработал")
+
     except Exception as e:
-        log.warning(f"Ошибка Twitter Writer (не критично): {e}")
+        log.warning(f"Ошибка Twitter (не критично): {e}")
 
     # ─── Шаг 7: Admin Notify ─────────────────────────────
     log.step(7, "ADMIN NOTIFY: отправляю уведомление")
@@ -162,14 +224,19 @@ def run_pipeline() -> dict:
         log.warning(f"Ошибка логирования (не критично): {e}")
 
     # ─── Итог ────────────────────────────────────────────
+    auto_pub_status = "✅ Авто-опубликован" if twitter_result.get("auto_published") else (
+        "📝 Черновик готов" if twitter_result.get("success") else "⚠️ Пропущено"
+    )
+
     log.summary({
-        "Тема":      plan["topic"],
-        "Продукт":   plan["product"]["name"],
-        "Ссылка":    plan["product"]["affiliate_link"],
+        "Режим":     plan.get("mode", "growth"),
+        "Тема":      plan["topic"][:50],
+        "Источник":  plan.get("news", {}).get("source", "editorial"),
+        "CTA":       plan.get("cta_link", ""),
         "Telegram":  "✅ Опубликовано",
-        "Twitter/X": "✅ Твит готов" if twitter_result.get("success") else "⚠️ Пропущено",
+        "Twitter/X": auto_pub_status,
         "Admin":     "✅ Уведомлён" if admin_result.get("success") else "⚠️ Пропущено",
-        "С фото":    "Да ✅" if image_path else "Нет ⚠️",
+        "С фото":    "Да ✅" if image_path else "Нет (нативный вид)",
         "Время":     log.elapsed(),
     })
 
@@ -180,6 +247,7 @@ def run_pipeline() -> dict:
         "length": editor_result["length"],
         "ai_source": copywriter_result["ai_source"],
         "has_image": image_path is not None,
+        "twitter_auto": twitter_result.get("auto_published", False),
     }
 
 

@@ -86,14 +86,12 @@ COLOR_SCHEMES = [
 ]
 
 PRODUCT_FACTS = {
-    "default": ["Saves 10+ hours/week", "Used by 50K+ creators", "Free plan available"],
-    "Castmagic": ["10x faster content", "Auto transcription", "50+ languages"],
-    "ElevenLabs": ["1000+ AI voices", "Ultra realistic", "29 languages"],
-    "Writesonic": ["10x faster writing", "100+ templates", "SEO optimized"],
-    "Pictory AI": ["Text to video", "Auto captions", "1000+ templates"],
-    "MindStudio": ["No-code AI", "Custom agents", "API access"],
-    "Reply.io": ["Automate outreach", "10x more leads", "AI personalization"],
-    "Murf": ["120+ voices", "Studio quality", "Team collaboration"],
+    "default": ["Экономия 10+ ч/нед", "Топ AI тренд", "Доступно онлайн"],
+    "news": ["Свежая новость", "Главное за сегодня", "Разбор тренда"],
+    "tools": ["Быстрый старт", "Экономия времени", "Бесплатный тест"],
+    "Notta AI": ["Авто-расшифровка", "Экономия времени", "50+ языков"],
+    "Presenti AI": ["Слайды за 1 мин", "Умный дизайн", "Экспорт в PDF"],
+    "Boardmix": ["AI доска", "Командная работа", "Mindmaps & Канбан"],
 }
 
 
@@ -412,10 +410,10 @@ def create_telegram_image(
     footer_font = _get_font(28)
     footer_bold = _get_font(28, bold=True)
 
-    draw.text((65, H - 87), "Channel:", font=footer_font, fill=scheme["accent2"])
-    draw.text((200, H - 87), channel_display, font=footer_bold, fill=scheme["text_secondary"])
+    draw.text((65, H - 87), "Канал:", font=footer_font, fill=scheme["accent2"])
+    draw.text((180, H - 87), channel_display, font=footer_bold, fill=scheme["text_secondary"])
 
-    draw.text((W - 230, H - 87), "Podpishis!", font=footer_font, fill=scheme["accent2"])
+    draw.text((W - 240, H - 87), "Подпишись! 🚀", font=footer_font, fill=scheme["accent2"])
 
     # ── Нижняя полоса ─────────────────────────────────────
     draw.rectangle([(0, H - 7), (W, H)], fill=scheme["accent"])

@@ -19,8 +19,19 @@ class Config:
     TELEGRAM_CHANNEL_USERNAME: str = os.getenv(
         "TELEGRAM_CHANNEL_USERNAME", "@nejroavtomatizacia"
     )
-    TELEGRAM_ADMIN_CHAT_ID: str = os.getenv("TELEGRAM_ADMIN_CHAT_ID", "")
+    TELEGRAM_ADMIN_CHAT_ID: str = os.getenv("TELEGRAM_ADMIN_CHAT_ID", "")  # опционально
     TELEGRAM_OWNER_ID: str = os.getenv("TELEGRAM_OWNER_ID", "")
+
+    # ─── Twitter/X ────────────────────────────────────────
+    TWITTER_API_KEY: str = os.getenv("TWITTER_API_KEY", "")
+    TWITTER_API_SECRET: str = os.getenv("TWITTER_API_SECRET", "")
+    TWITTER_ACCESS_TOKEN: str = os.getenv("TWITTER_ACCESS_TOKEN", "")
+    TWITTER_ACCESS_SECRET: str = os.getenv("TWITTER_ACCESS_SECRET", "")
+
+    # ─── Режим пайплайна ──────────────────────────────────
+    # "growth"    — набор аудитории (CTA → Telegram-канал)
+    # "affiliate" — монетизация (CTA → партнёрская ссылка)
+    PIPELINE_MODE: str = os.getenv("PIPELINE_MODE", "growth")
 
     # ─── AI провайдеры ────────────────────────────────────
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
@@ -117,7 +128,7 @@ class Config:
         required = {
             "TELEGRAM_BOT_TOKEN": cls.TELEGRAM_BOT_TOKEN,
             "TELEGRAM_CHANNEL_ID": cls.TELEGRAM_CHANNEL_ID,
-            "TELEGRAM_ADMIN_CHAT_ID": cls.TELEGRAM_ADMIN_CHAT_ID,
+            # TELEGRAM_ADMIN_CHAT_ID опционален — без него просто не будут приходить уведомления
         }
 
         ai_keys = {

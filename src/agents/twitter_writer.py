@@ -170,28 +170,22 @@ TWITTER_FORMAT_ROTATION = [
 def _get_cta_link(content_plan: Dict) -> str:
     """
     Определяет CTA ссылку:
-    - Если есть affiliate link → используем его
-    - Если нет → используем Telegram канал
+    - В growth режиме или если нет партнерки → ссылка на Telegram канал
+    - В affiliate режиме → ссылка на партнерку
     """
-    affiliate_link = content_plan.get("product", {}).get("affiliate_link", "")
+    from src.core.config import Config
 
-    placeholder_keywords = [
-        "your_link",
-        "affiliate_link",
-        "example.com",
-        "placeholder",
-        "",
-    ]
+    plan_cta = content_plan.get("cta_link", "")
+    if plan_cta:
+        return plan_cta
 
-    is_real_link = affiliate_link and not any(
-        kw in affiliate_link.lower() for kw in placeholder_keywords
-    )
+    if content_plan.get("mode") == "affiliate":
+        affiliate_link = content_plan.get("product", {}).get("affiliate_link", "")
+        if affiliate_link:
+            return affiliate_link
 
-    if is_real_link:
-        return affiliate_link
-
-    # Fallback → Telegram канал
-    return "https://t.me/nejroavtomatizacia"
+    # Fallback → Telegram канал из конфигурации
+    return Config.get_channel_link()
 
 
 def _select_twitter_format(content_plan: Dict) -> str:

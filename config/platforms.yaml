@@ -7,17 +7,18 @@ platforms:
     posts_per_day: 2
     language: "ru"
     max_length: 4096
-    disclosure_required: true
+    # Дисклеймер показывается только в affiliate режиме
+    disclosure_required: false
     disclosure_text: "\n\n⚠️ <i>Ссылка может быть партнёрской. Если вы зарегистрируетесь по ней, автор может получить комиссию без доплаты для вас.</i>"
     schedule:
-      - "10:00"
-      - "19:00"
+      - "10:00"  # 10:00 МСК = 07:00 UTC
+      - "19:00"  # 19:00 МСК = 16:00 UTC
 
   twitter:
-    enabled: false
-    mode: "draft"
+    enabled: true       # ← включено!
+    mode: "auto"        # ← "auto" = публикуем сами, "draft" = только черновик
     max_length: 280
-    posts_per_day: 3
+    posts_per_day: 2    # синхронно с Telegram
 
   pinterest:
     enabled: false
@@ -25,6 +26,6 @@ platforms:
     posts_per_day: 2
 
   reddit:
-    enabled: false
+    enabled: false      # включим после одобрения аккаунта
     mode: "draft"
     posts_per_day: 1

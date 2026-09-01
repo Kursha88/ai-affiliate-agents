@@ -72,9 +72,12 @@ def _check_forbidden_phrases(text: str) -> list:
     return found
 
 
-def _check_link_present(text: str, affiliate_link: str) -> bool:
-    """Проверяет что партнёрская ссылка есть в тексте"""
-    domain = affiliate_link.replace("https://", "").replace("http://", "").split("/")[0]
+def _check_cta_present(text: str, cta_link: str) -> bool:
+    """Проверяет что CTA-ссылка (партнёрка или канал) есть в тексте"""
+    if not cta_link:
+        return True  # Нет ссылки — не проверяем
+    # Проверяем по домену
+    domain = cta_link.replace("https://", "").replace("http://", "").split("/")[0]
     return domain in text
 
 
@@ -97,10 +100,7 @@ def _check_length(text: str) -> dict:
 
 
 def _trim_if_too_long(text: str, max_length: int = 3800) -> str:
-    """
-    Если текст слишком длинный — обрезаем до последнего
-    полного предложения перед лимитом
-    """
+    """Обрезает до последнего полного предложения перед лимитом"""
     if len(text) <= max_length:
         return text
 
@@ -121,10 +121,13 @@ def edit_post(copywriter_result: Dict) -> Dict:
     """
     Основная функция агента Editor.
     Принимает результат от Copywriter и возвращает готовый пост.
+
+    Поддерживает оба режима: growth (канал) и affiliate (партнёрка).
     """
     text = copywriter_result["draft_text"]
     plan = copywriter_result["plan"]
-    affiliate_link = plan["product"]["affiliate_link"]
+    mode = plan.get("mode", "growth")
+    cta_link = plan.get("cta_link", "")
 
     issues = []
 
@@ -142,10 +145,13 @@ def edit_post(copywriter_result: Dict) -> Dict:
     if forbidden:
         issues.append(f"Запрещённые фразы: {', '.join(forbidden)}")
 
-    # 5. Проверяем наличие ссылки
-    if not _check_link_present(text, affiliate_link):
-        issues.append(f"Ссылка {affiliate_link} не найдена в тексте")
-        text += f"\n\n🔗 {affiliate_link}"
+    # 5. Проверяем наличие CTA-ссылки (канал или партнёрка)
+    if cta_link and not _check_cta_present(text, cta_link):
+        issues.append(f"CTA-ссылка не найдена в тексте: {cta_link}")
+        if mode == "growth":
+            text += f"\n\n👉 Подписывайся: {cta_link}"
+        else:
+            text += f"\n\n🔗 {cta_link}"
 
     # 6. Обрезаем если слишком длинный
     text = _trim_if_too_long(text)
@@ -166,6 +172,7 @@ def edit_post(copywriter_result: Dict) -> Dict:
         "length": length_check["length"],
         "issues": issues,
         "ready": len(issues) == 0,
+        "mode": mode,
     }
 
 
@@ -182,6 +189,7 @@ if __name__ == "__main__":
     print(f"✅ Пост отредактирован! (AI: {editor_result['ai_source']})")
     print(f"📏 Длина: {editor_result['length']} символов")
     print(f"✔️  Готов: {editor_result['ready']}")
+    print(f"🔧 Режим: {editor_result['mode']}")
 
     if editor_result["issues"]:
         print(f"⚠️  Замечания: {editor_result['issues']}")
