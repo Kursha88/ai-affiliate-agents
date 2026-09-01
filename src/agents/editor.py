@@ -29,17 +29,10 @@ FORBIDDEN_PHRASES = [
 
 def _remove_markdown(text: str) -> str:
     """
-    Убирает Markdown разметку которую добавляет AI
-    и которую Telegram не поддерживает в обычном режиме
+    Убирает грубую Markdown разметку, сохраняя красивый вид.
     """
-    # Убираем жирный текст **текст** → текст
-    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
-
-    # Убираем курсив *текст* → текст
-    text = re.sub(r'\*(.+?)\*', r'\1', text)
-
-    # Убираем markdown ссылки [текст](url) → url
-    text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'\2', text)
+    # Убираем markdown ссылки [текст](url) → текст (url)
+    text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'\1 (\2)', text)
 
     # Убираем заголовки ## Заголовок → Заголовок
     text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
@@ -48,10 +41,7 @@ def _remove_markdown(text: str) -> str:
     text = re.sub(r'^[-*_]{3,}$', '', text, flags=re.MULTILINE)
 
     # Убираем markdown буллиты * текст → • текст
-    text = re.sub(r'^\* (.+)$', r'• \1', text, flags=re.MULTILINE)
-
-    # Убираем inline code `код` → код
-    text = re.sub(r'`([^`]+)`', r'\1', text)
+    text = re.sub(r'^\*\s+(.+)$', r'• \1', text, flags=re.MULTILINE)
 
     return text
 
@@ -70,15 +60,6 @@ def _check_forbidden_phrases(text: str) -> list:
         if phrase.lower() in text.lower():
             found.append(phrase)
     return found
-
-
-def _check_cta_present(text: str, cta_link: str) -> bool:
-    """Проверяет что CTA-ссылка (партнёрка или канал) есть в тексте"""
-    if not cta_link:
-        return True  # Нет ссылки — не проверяем
-    # Проверяем по домену
-    domain = cta_link.replace("https://", "").replace("http://", "").split("/")[0]
-    return domain in text
 
 
 def _fix_bullets(text: str) -> str:
@@ -120,18 +101,15 @@ def _trim_if_too_long(text: str, max_length: int = 3800) -> str:
 def edit_post(copywriter_result: Dict) -> Dict:
     """
     Основная функция агента Editor.
-    Принимает результат от Copywriter и возвращает готовый пост.
-
-    Поддерживает оба режима: growth (канал) и affiliate (партнёрка).
+    Чистит и форматирует пост перед публикацией в Telegram.
     """
     text = copywriter_result["draft_text"]
     plan = copywriter_result["plan"]
     mode = plan.get("mode", "growth")
-    cta_link = plan.get("cta_link", "")
 
     issues = []
 
-    # 1. Убираем Markdown разметку
+    # 1. Очистка разметки
     text = _remove_markdown(text)
 
     # 2. Чистим английские слова
@@ -145,13 +123,11 @@ def edit_post(copywriter_result: Dict) -> Dict:
     if forbidden:
         issues.append(f"Запрещённые фразы: {', '.join(forbidden)}")
 
-    # 5. Проверяем наличие CTA-ссылки (канал или партнёрка)
-    if cta_link and not _check_cta_present(text, cta_link):
-        issues.append(f"CTA-ссылка не найдена в тексте: {cta_link}")
-        if mode == "growth":
-            text += f"\n\n👉 Подписывайся: {cta_link}"
-        else:
-            text += f"\n\n🔗 {cta_link}"
+    # 5. Если партнерский режим (affiliate) — проверяем наличие партнерской ссылки
+    if mode == "affiliate":
+        affiliate_link = plan.get("product", {}).get("affiliate_link", "")
+        if affiliate_link and affiliate_link not in text:
+            text += f"\n\n🔗 Попробовать: {affiliate_link}"
 
     # 6. Обрезаем если слишком длинный
     text = _trim_if_too_long(text)
@@ -189,13 +165,6 @@ if __name__ == "__main__":
     print(f"✅ Пост отредактирован! (AI: {editor_result['ai_source']})")
     print(f"📏 Длина: {editor_result['length']} символов")
     print(f"✔️  Готов: {editor_result['ready']}")
-    print(f"🔧 Режим: {editor_result['mode']}")
-
-    if editor_result["issues"]:
-        print(f"⚠️  Замечания: {editor_result['issues']}")
-
-    print("\n" + "=" * 50)
-    print("ФИНАЛЬНЫЙ ТЕКСТ:")
-    print("=" * 50)
+    print("-" * 50)
     print(editor_result["final_text"])
-    print("=" * 50)
+    print("-" * 50)
