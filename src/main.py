@@ -201,17 +201,20 @@ def run_pipeline() -> dict:
             log.warning(f"Исключение VK: {e}")
 
     # ─── Шаг 8: Воронка внешнего трафика (Pinterest) ─────
+    pin_result = {"success": False}
     if is_pinterest_configured() and image_path:
         log.step(8, "TRAFFIC FUNNEL: Pinterest")
         try:
-            pin_res = create_pin(
+            pin_result = create_pin(
                 title=plan["topic"],
                 description=editor_result["final_text"][:400],
                 image_url_or_path=image_path,
                 link=Config.get_channel_link(),
             )
-            if pin_res["success"]:
-                log.success(f"✅ Пин создан в Pinterest! {pin_res.get('url', '')}")
+            if pin_result["success"]:
+                log.success(f"✅ Пин создан в Pinterest! {pin_result.get('url', '')}")
+            else:
+                log.warning(f"Pinterest: {pin_result.get('error', '')}")
         except Exception as e:
             log.warning(f"Исключение Pinterest: {e}")
 
@@ -224,6 +227,7 @@ def run_pipeline() -> dict:
             telegram_text=editor_result["final_text"],
             tweet_result=twitter_result,
             publish_result=publish_result,
+            pin_result=pin_result,
         )
         if admin_result["success"]:
             log.success("Отчет доставлен админу в Telegram!")

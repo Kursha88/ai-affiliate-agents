@@ -39,6 +39,8 @@ async def _send_admin_notification_async(
     has_image: bool,
     auto_published: bool = False,
     tweet_url: str = "",
+    pin_url: str = "",
+    pin_error: str = "",
 ) -> dict:
     try:
         from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
@@ -49,11 +51,13 @@ async def _send_admin_notification_async(
 
         # ─── Сообщение 1: Карточка публикации ────────────────
         image_label = "✅ Да" if has_image else "❌ Нет (нативный текст)"
+        pinterest_label = f"✅ Создан (<a href='{pin_url}'>открыть</a>)" if pin_url else ("❌ Ошибка" if pin_error else "⚪ Не настроен")
 
         card_text = (
             f"🚀 <b>НОВЫЙ ПОСТ В TELEGRAM ОПУБЛИКОВАН!</b>\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"🖼 <b>Изображение:</b> {image_label}\n\n"
+            f"🖼 <b>Изображение:</b> {image_label}\n"
+            f"📌 <b>Pinterest Пин:</b> {pinterest_label}\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
             f"📝 <b>ТЕКСТ ПОСТА:</b>\n\n"
             f"{telegram_text[:1200]}"
@@ -140,6 +144,7 @@ def send_admin_notification(
     telegram_text: str,
     tweet_result: dict,
     publish_result: dict,
+    pin_result: Optional[dict] = None,
 ) -> dict:
     """Отправляет уведомление администратору после публикации."""
     product_name = publish_result.get("plan", {}).get(
@@ -154,6 +159,10 @@ def send_admin_notification(
     has_image = publish_result.get("has_image", False)
     auto_published = tweet_result.get("auto_published", False)
     tweet_url = tweet_result.get("tweet_url", "")
+
+    pin_res = pin_result or {}
+    pin_url = pin_res.get("url", "")
+    pin_error = pin_res.get("error", "")
 
     if not tweet_text:
         return {
@@ -173,6 +182,8 @@ def send_admin_notification(
             has_image=has_image,
             auto_published=auto_published,
             tweet_url=tweet_url,
+            pin_url=pin_url,
+            pin_error=pin_error,
         )
     )
 
