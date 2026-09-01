@@ -261,4 +261,6 @@ if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "report":
         run_report()
     else:
-        run_pipeline()
+        result = run_pipeline()
+        if not result.get("success", False):
+            sys.exit(1)

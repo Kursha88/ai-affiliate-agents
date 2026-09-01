@@ -154,7 +154,8 @@ def fetch_hn_ai_news(max_items: int = 50) -> list:
 # ─── Reddit ──────────────────────────────────────────────────────────────────
 
 REDDIT_HEADERS = {
-    "User-Agent": "AI-News-Aggregator/1.0 (by u/ai_news_reader)",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "application/json",
 }
 
 REDDIT_SUBREDDITS = [
