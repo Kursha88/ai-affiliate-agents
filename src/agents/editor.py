@@ -27,23 +27,50 @@ FORBIDDEN_PHRASES = [
 ]
 
 
-def _remove_markdown(text: str) -> str:
+def _format_telegram_html(text: str) -> str:
     """
-    Убирает грубую Markdown разметку, сохраняя красивый вид.
+    Преобразует Markdown разметку в валидный Telegram HTML:
+    **жирный** ➔ <b>жирный</b>
+    *курсив* ➔ <i>курсив</i>
+    `код` ➔ <code>код</code>
     """
-    # Убираем markdown ссылки [текст](url) → текст (url)
-    text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'\1 (\2)', text)
+    # 1. Сначала превращаем **жирный** в <b>жирный</b>
+    text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
 
-    # Убираем заголовки ## Заголовок → Заголовок
+    # 2. Одиночные *курсив* в <i>курсив</i> (если не часть буллитов)
+    text = re.sub(r'(?<!\*)\*([^\*\n]+?)\*(?!\*)', r'<i>\1</i>', text)
+
+    # 3. `inline code` в <code>code</code>
+    text = re.sub(r'`([^`\n]+?)`', r'<code>\1</code>', text)
+
+    # 4. Убираем заголовки ## Заголовок ➔ Заголовок
     text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
 
-    # Убираем горизонтальные линии ---
+    # 5. Убираем горизонтальные линии ---
     text = re.sub(r'^[-*_]{3,}$', '', text, flags=re.MULTILINE)
 
-    # Убираем markdown буллиты * текст → • текст
+    # 6. Убираем markdown буллиты * текст ➔ • текст
     text = re.sub(r'^\*\s+(.+)$', r'• \1', text, flags=re.MULTILINE)
 
     return text
+
+
+def _clean_ai_chatter(text: str) -> str:
+    """Дополнительная защита от роботских вводных фраз."""
+    lines = text.split("\n")
+    cleaned = []
+    skip = True
+    for line in lines:
+        stripped = line.strip()
+        lower = stripped.lower()
+        if skip:
+            if not stripped:
+                continue
+            if lower.startswith("вот ") or "для твоего telegram" in lower or "для вашего telegram" in lower:
+                continue
+            skip = False
+        cleaned.append(line)
+    return "\n".join(cleaned).strip()
 
 
 def _clean_english_words(text: str) -> str:
@@ -63,7 +90,7 @@ def _check_forbidden_phrases(text: str) -> list:
 
 
 def _fix_bullets(text: str) -> str:
-    """Заменяет разные виды буллитов на единый стиль"""
+    """Заменяет разные виды дефисов на красивые точки"""
     text = re.sub(r'^[\-–—]\s+', '• ', text, flags=re.MULTILINE)
     return text
 
@@ -101,7 +128,7 @@ def _trim_if_too_long(text: str, max_length: int = 3800) -> str:
 def edit_post(copywriter_result: Dict) -> Dict:
     """
     Основная функция агента Editor.
-    Чистит и форматирует пост перед публикацией в Telegram.
+    Чистит и форматирует пост в HTML для Telegram.
     """
     text = copywriter_result["draft_text"]
     plan = copywriter_result["plan"]
@@ -109,34 +136,37 @@ def edit_post(copywriter_result: Dict) -> Dict:
 
     issues = []
 
-    # 1. Очистка разметки
-    text = _remove_markdown(text)
+    # 1. Удаляем вступительный мусор
+    text = _clean_ai_chatter(text)
 
-    # 2. Чистим английские слова
+    # 2. Форматируем в Telegram HTML (жирный <b>, курсив <i>)
+    text = _format_telegram_html(text)
+
+    # 3. Чистим английские слова
     text = _clean_english_words(text)
 
-    # 3. Унифицируем буллиты
+    # 4. Унифицируем буллиты
     text = _fix_bullets(text)
 
-    # 4. Проверяем запрещённые фразы
+    # 5. Проверяем запрещённые фразы
     forbidden = _check_forbidden_phrases(text)
     if forbidden:
         issues.append(f"Запрещённые фразы: {', '.join(forbidden)}")
 
-    # 5. Если партнерский режим (affiliate) — проверяем наличие партнерской ссылки
+    # 6. Если партнерский режим (affiliate) — добавляем партнерскую ссылку
     if mode == "affiliate":
         affiliate_link = plan.get("product", {}).get("affiliate_link", "")
         if affiliate_link and affiliate_link not in text:
             text += f"\n\n🔗 Попробовать: {affiliate_link}"
 
-    # 6. Обрезаем если слишком длинный
+    # 7. Обрезаем если слишком длинный
     text = _trim_if_too_long(text)
 
-    # 7. Убираем лишние пробелы и переносы
+    # 8. Убираем лишние пустые строки
     text = re.sub(r'\n{3,}', '\n\n', text)
     text = text.strip()
 
-    # 8. Проверяем длину
+    # 9. Проверяем длину
     length_check = _check_length(text)
     if length_check["warning"]:
         issues.append(length_check["warning"])
@@ -150,21 +180,3 @@ def edit_post(copywriter_result: Dict) -> Dict:
         "ready": len(issues) == 0,
         "mode": mode,
     }
-
-
-if __name__ == "__main__":
-    from src.agents.strategist import create_content_plan
-    from src.agents.copywriter import write_post
-
-    print("=== EDITOR TEST ===\n")
-
-    plan = create_content_plan()
-    copywriter_result = write_post(plan)
-    editor_result = edit_post(copywriter_result)
-
-    print(f"✅ Пост отредактирован! (AI: {editor_result['ai_source']})")
-    print(f"📏 Длина: {editor_result['length']} символов")
-    print(f"✔️  Готов: {editor_result['ready']}")
-    print("-" * 50)
-    print(editor_result["final_text"])
-    print("-" * 50)
