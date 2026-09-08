@@ -82,15 +82,89 @@ jobs:
       - name: Save logs to repository
         if: always()
         run: |
+          set -euo pipefail
+
+          # Bot identity + remote (preserved from the original step)
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/Kursha88/ai-affiliate-agents.git
-          git pull --rebase origin main || true
-          git add data/factory.db data/topic_history.json data/published_posts.csv || true
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Auto: update logs [skip ci]"
-            git push origin main
+
+          # ── 1. Integrity gate: never stage/commit/push a corrupt DB ──
+          # Exit 0 also covers "DB not created this run" (fresh runner).
+          if ! python scripts/check_db_integrity.py data/factory.db; then
+            echo "::error title=SQLite integrity check failed::data/factory.db failed quick_check - refusing to stage, commit or push the database"
+            exit 1
           fi
-          exit 0
+
+          # ── 2. Stage allowed persistence files individually, only if they exist ──
+          # Legacy files (topic_history.json, published_posts.csv) are intentionally
+          # out of scope for this step and are NOT staged.
+          stage_file() {
+            local f="$1"
+            if [ -f "$f" ]; then
+              if ! git add -- "$f"; then
+                echo "::error title=Git staging failed::git add failed for $f"
+                exit 1
+              fi
+            else
+              echo "Persistence file not present this run, skipping: $f"
+            fi
+          }
+          stage_file data/factory.db
+          stage_file data/analytics.csv
+          stage_file data/logs/pipeline.log
+
+          # ── 3. Commit only if the staging area actually contains changes ──
+          created_commit=0
+          if ! git diff --cached --quiet; then
+            git commit -m "Auto: update logs [skip ci]"
+            created_commit=1
+          else
+            echo "No staged changes - nothing to commit."
+          fi
+
+          # Guarded abort: only fails visibly, never silently resolves a conflict.
+          abort_rebase_if_active() {
+            if ! git rebase --abort 2>/dev/null; then
+              echo "::warning::No active rebase to abort (it had already cleaned itself up)."
+            fi
+          }
+
+          sync_and_push() {
+            if ! git fetch origin main; then
+              echo "::error title=Git fetch failed::Could not fetch origin/main before sync."
+              return 1
+            fi
+            if ! git rebase origin/main; then
+              abort_rebase_if_active
+              echo "::error title=Rebase conflict::git rebase origin/main failed. A binary data/factory.db conflict must be resolved manually - the persistence commit was NOT pushed."
+              return 1
+            fi
+            if ! git push origin main; then
+              echo "::warning::First push rejected - origin/main moved. Syncing once and retrying."
+              if ! git fetch origin main; then
+                echo "::error title=Git fetch failed::Could not fetch origin/main before retry sync."
+                return 1
+              fi
+              if ! git rebase origin/main; then
+                abort_rebase_if_active
+                echo "::error title=Rebase conflict on retry::Could not rebase onto origin/main after push rejection. Manual resolution required - persistence NOT pushed."
+                return 1
+              fi
+              if ! git push origin main; then
+                echo "::error title=Push failed::Second push attempt rejected after rebase. Persistence NOT pushed."
+                return 1
+              fi
+            fi
+          }
+
+          # ── 4. Sync + push (only when a local persistence commit exists) ──
+          if [ "$created_commit" -eq 1 ]; then
+            if ! sync_and_push; then
+              exit 1
+            fi
+          else
+            echo "No persistence commit created - skipping sync/push."
+          fi
+
+          echo "Persistence step finished successfully."

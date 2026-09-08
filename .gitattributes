@@ -1,0 +1,7 @@
+# Temporary Git-based persistence for the SQLite state layer.
+# Treat the database as strictly binary:
+#   -text   -> never normalize line endings (CRLF would corrupt pages)
+#   -diff   -> no textual diff attempts on a binary file
+#   -merge  -> disable textual auto-merge; conflicts must be resolved
+#              manually. Never silently pick one DB side over another.
+data/factory.db binary

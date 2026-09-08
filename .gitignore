@@ -39,3 +39,8 @@ Thumbs.db
 # Секреты
 *.key
 secrets.yaml
+
+# SQLite transient sidecar files — never commit (recovery data for data/factory.db)
+data/factory.db-journal
+data/factory.db-wal
+data/factory.db-shm
