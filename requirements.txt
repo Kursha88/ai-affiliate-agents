@@ -29,3 +29,5 @@ fonttools==4.53.0
 # Базовые зависимости
 pydantic==2.13.4
 typing-extensions==4.15.0
+# IANA timezone database (нужна для Europe/Kyiv, особенно на Windows)
+tzdata==2026.3

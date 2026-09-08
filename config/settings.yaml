@@ -46,3 +46,7 @@ logging:
   enabled: true
   file: "data/published_posts.csv"
   analytics_file: "data/analytics.csv"
+
+storage:
+  database_path: "data/factory.db"
+  business_timezone: "Europe/Kyiv"

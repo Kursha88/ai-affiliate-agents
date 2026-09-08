@@ -42,12 +42,10 @@ class Config:
     ASSETS_DIR: str = "assets/output"
     CONFIG_DIR: str = "config"
     LOGS_DIR: str = "data/logs"
-
     POSTS_FILE: str = "data/published_posts.csv"
     HISTORY_FILE: str = "data/topic_history.json"
     ANALYTICS_FILE: str = "data/analytics.csv"
     LOG_FILE: str = "data/logs/pipeline.log"
-
     SETTINGS_FILE: str = "config/settings.yaml"
     PARTNERS_FILE: str = "config/partners.yaml"
 
@@ -64,6 +62,10 @@ class Config:
     # ─── AI настройки ─────────────────────────────────────
     AI_TEMPERATURE: float = 0.7
     AI_MAX_TOKENS: int = 1000
+
+    # ─── Storage / Factory state ──────────────────────────
+    DATABASE_PATH: str = os.getenv("DATABASE_PATH", "")
+    BUSINESS_TIMEZONE: str = os.getenv("BUSINESS_TIMEZONE", "")
 
     _settings_cache: Optional[dict] = None
     _partners_cache: Optional[dict] = None
@@ -120,6 +122,26 @@ class Config:
         return f"https://t.me/{username}"
 
     @classmethod
+    def get_database_path(cls) -> str:
+        """Возвращает путь к SQLite базе (env > settings.yaml > default)"""
+        env_value = cls.DATABASE_PATH.strip()
+        if env_value:
+            return env_value
+        return cls.get_settings().get("storage", {}).get(
+            "database_path", "data/factory.db"
+        )
+
+    @classmethod
+    def get_business_timezone(cls) -> str:
+        """Возвращает бизнес-timezone (env > settings.yaml > default)"""
+        env_value = cls.BUSINESS_TIMEZONE.strip()
+        if env_value:
+            return env_value
+        return cls.get_settings().get("storage", {}).get(
+            "business_timezone", "Europe/Kyiv"
+        )
+
+    @classmethod
     def validate(cls) -> dict:
         """
         Проверяет наличие всех обязательных переменных.
@@ -130,21 +152,17 @@ class Config:
             "TELEGRAM_CHANNEL_ID": cls.TELEGRAM_CHANNEL_ID,
             # TELEGRAM_ADMIN_CHAT_ID опционален — без него просто не будут приходить уведомления
         }
-
         ai_keys = {
             "GEMINI_API_KEY": cls.GEMINI_API_KEY,
             "GROQ_API_KEY": cls.GROQ_API_KEY,
         }
-
         missing = [k for k, v in required.items() if not v]
         ai_available = any(v for v in ai_keys.values())
-
         issues = []
         if missing:
             issues.append(f"Отсутствуют переменные: {', '.join(missing)}")
         if not ai_available:
             issues.append("Нет доступных AI провайдеров (GEMINI или GROQ)")
-
         return {
             "valid": len(issues) == 0,
             "issues": issues,
@@ -160,6 +178,11 @@ class Config:
             cls.ASSETS_DIR,
             cls.LOGS_DIR,
         ]
+
+        db_dir = os.path.dirname(cls.get_database_path())
+        if db_dir:
+            dirs.append(db_dir)
+
         for d in dirs:
             os.makedirs(d, exist_ok=True)
 
@@ -174,10 +197,8 @@ class Config:
         print(f"🤖 Groq API:         {'✅' if cls.GROQ_API_KEY else '❌'}")
         print(f"📁 Data dir:         {cls.DATA_DIR}")
         print(f"🖼  Assets dir:       {cls.ASSETS_DIR}")
-
         partners = cls.get_active_partners()
         print(f"🤝 Active partners:  {len(partners)}")
-
         validation = cls.validate()
         print(f"\n{'✅ Конфигурация OK' if validation['valid'] else '❌ Есть проблемы'}")
         if validation["issues"]:
