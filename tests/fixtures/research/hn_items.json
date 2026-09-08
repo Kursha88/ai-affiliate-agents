@@ -1,0 +1,71 @@
+{
+  "comment": "Fixture: HN item payloads keyed by item id. Timestamps are epoch seconds. Reference 'now' = 2026-09-08T12:00:00Z (epoch 1788868800). Coverage: 901 normal story with outbound URL (2h old); 902 Ask-HN-native story without outbound URL (5h old); 903 missing payload; 904 dead item; 905 poll (unsupported type); 906 blank title; 907 too-old story (72h); 908 story missing its time field.",
+  "items": {
+    "999999901": {
+      "id": 999999901,
+      "type": "story",
+      "title": "Show HN: Open-source vibe coding toolkit for terminal workflows",
+      "url": "https://github.com/example/vibe-tool?utm_source=hackernews",
+      "score": 412,
+      "descendants": 57,
+      "by": "alice",
+      "time": 1788861600
+    },
+    "999999902": {
+      "id": 999999902,
+      "type": "story",
+      "title": "Ask HN: How do you evaluate free AI tools before adopting them?",
+      "score": 88,
+      "descendants": 31,
+      "by": "bob",
+      "time": 1788850800
+    },
+    "999999904": {
+      "id": 999999904,
+      "type": "story",
+      "title": "Dead story that must be skipped",
+      "url": "https://example.com/dead",
+      "dead": true,
+      "score": 3,
+      "descendants": 0,
+      "by": "eve",
+      "time": 1788865200
+    },
+    "999999905": {
+      "id": 999999905,
+      "type": "poll",
+      "title": "Poll: Which AI agent framework do you use?",
+      "score": 120,
+      "descendants": 45,
+      "by": "carol",
+      "time": 1788858000
+    },
+    "999999906": {
+      "id": 999999906,
+      "type": "story",
+      "title": "   ",
+      "url": "https://example.com/blank-title",
+      "score": 10,
+      "by": "dave",
+      "time": 1788865200
+    },
+    "999999907": {
+      "id": 999999907,
+      "type": "story",
+      "title": "Ancient story far outside the freshness window",
+      "url": "https://example.com/old",
+      "score": 250,
+      "descendants": 90,
+      "by": "frank",
+      "time": 1788609600
+    },
+    "999999908": {
+      "id": 999999908,
+      "type": "story",
+      "title": "Story with missing time field",
+      "url": "https://example.com/no-time",
+      "score": 5,
+      "by": "grace"
+    }
+  }
+}

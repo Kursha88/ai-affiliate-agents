@@ -1,0 +1,13 @@
+{
+  "comment": "Fixture: HN topstories id list (subset; ids map into hn_items.json). 999999903 deliberately has no item payload to exercise isolated skip behavior. Reference 'now' for tests: 2026-09-08T12:00:00Z (epoch 1788868800).",
+  "story_ids": [
+    999999901,
+    999999902,
+    999999903,
+    999999904,
+    999999905,
+    999999906,
+    999999907,
+    999999908
+  ]
+}
