@@ -50,3 +50,15 @@ logging:
 storage:
   database_path: "data/factory.db"
   business_timezone: "Europe/Kyiv"
+
+research:
+  trusted_primary_domains:
+    - "github.blog"
+  official_blog_feeds:
+    - name: "GitHub Blog"
+      feed_url: "https://github.blog/feed/"
+      trusted_domain: "github.blog"
+  official_docs_feeds:
+    - name: "GitHub Changelog"
+      feed_url: "https://github.blog/changelog/feed/"
+      trusted_domain: "github.blog"
