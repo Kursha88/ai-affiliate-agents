@@ -90,8 +90,10 @@ class TestPipelineSmoke(unittest.TestCase):
             ),
             mock.patch("src.main.get_logger", return_value=_DummyLogger()),
             mock.patch("random.random", return_value=0.9),
-            mock.patch("src.main.get_top_ai_news", return_value=[copy.deepcopy(FIXED_NEWS)]),
-            mock.patch("src.main.get_fallback_topic", return_value=copy.deepcopy(FIXED_NEWS)),
+            mock.patch(
+                "src.main._get_production_news_item",
+                return_value=copy.deepcopy(FIXED_NEWS),
+            ),
             mock.patch(
                 "src.main.create_content_plan",
                 side_effect=lambda news_item=None: copy.deepcopy(FIXED_PLAN),

@@ -1,11 +1,13 @@
 import sys
 import os
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 
 from src.core.config import Config
 from src.utils.logger import get_logger
 from src.utils.validators import is_fallback_text, validate_content_plan
-from src.agents.news_hunter import get_top_ai_news, get_fallback_topic
+from src.agents.news_hunter import get_fallback_topic
+from src.research.live import run_live_research
+from src.research.legacy_bridge import research_result_to_news_item
 from src.agents.strategist import create_content_plan
 from src.agents.copywriter import write_post
 from src.agents.editor import edit_post
@@ -146,6 +148,39 @@ def run_pipeline() -> dict:
         }
 
 
+def _get_production_news_item(*, now: datetime, log) -> dict:
+    """
+    Production Step 0 discovery: Researcher 2.0 — основной путь.
+
+    Config.get_research_config() → run_live_research() →
+    research_result_to_news_item(). Любая ошибка Researcher не критична:
+    используется legacy fallback. Ошибки самого fallback распространяются
+    дальше (вызов get_fallback_topic() вне try/except).
+    """
+    try:
+        research_config = Config.get_research_config()
+        result = run_live_research(
+            now=now,
+            limit=5,
+            **research_config.live_kwargs(),
+        )
+        news_item = research_result_to_news_item(result, now=now)
+    except Exception as e:
+        log.warning(f"Ошибка Researcher 2.0 (не критично): {e}")
+    else:
+        if news_item is not None:
+            log.success(f"Researcher 2.0: {news_item['title'][:60]}...")
+            return news_item
+
+        log.warning(
+            "Researcher 2.0 не вернул подходящих кандидатов — использую fallback"
+        )
+
+    fallback = get_fallback_topic()
+    log.success(f"Fallback тема: {fallback['title'][:60]}...")
+    return fallback
+
+
 def _run_pipeline_inner(state: StateService, run_id: str, log) -> dict:
     """
     Внутренний pipeline с сохранением существующей бизнес-логики.
@@ -158,24 +193,10 @@ def _run_pipeline_inner(state: StateService, run_id: str, log) -> dict:
     # ─── Шаг 0: Поиск горячей темы / новости ───────────────
     log.step(0, "CONTENT HUNTER: выбираю горячую тему / лайфхак")
 
-    news_item = None
-
-    try:
-        # 50% времени берем свежую новость, 50% — вирусный секретный промпт / лайфхак
-        import random
-
-        if random.random() > 0.5:
-            news_list = get_top_ai_news(count=3)
-            if news_list:
-                news_item = news_list[0]
-                log.success(f"Горячая новость: {news_item['title'][:60]}...")
-
-        if not news_item:
-            news_item = get_fallback_topic()
-            log.success(f"Тема лайфхака: {news_item['title'][:60]}...")
-    except Exception as e:
-        log.warning(f"Ошибка NewsHunter (не критично): {e}")
-        news_item = get_fallback_topic()
+    news_item = _get_production_news_item(
+        now=datetime.now(timezone.utc),
+        log=log,
+    )
 
     # ─── Шаг 1: Strategist ───────────────────────────────
     log.step(1, "STRATEGIST: формирую план контента")
