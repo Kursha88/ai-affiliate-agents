@@ -3,6 +3,8 @@ import yaml
 from typing import Optional
 from dotenv import load_dotenv
 
+from src.research.live_config import LiveResearchConfig
+
 load_dotenv()
 
 
@@ -81,6 +83,25 @@ class Config:
                 print(f"[Config] Ошибка загрузки settings.yaml: {e}")
                 cls._settings_cache = {}
         return cls._settings_cache
+
+    @classmethod
+    def get_research_config(cls) -> LiveResearchConfig:
+        """Возвращает конфигурацию Researcher 2.0 из settings["research"].
+
+        Только маппинг существующих настроек -> LiveResearchConfig.
+        Отсутствие секции research — валидный пустой конфиг.
+        """
+        settings = cls.get_settings()
+        if settings is None:
+            settings = {}
+        if not isinstance(settings, dict):
+            raise ValueError("settings.yaml root must be a mapping")
+        research = settings.get("research", {})
+        if research is None:
+            research = {}
+        if not isinstance(research, dict):
+            raise ValueError("settings.research must be a mapping")
+        return LiveResearchConfig.from_mapping(research)
 
     @classmethod
     def get_partners(cls) -> dict:
