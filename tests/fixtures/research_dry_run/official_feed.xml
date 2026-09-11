@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>ExampleAI Blog</title>
+    <link>https://example-ai.com/blog</link>
+    <description>Official ExampleAI announcements</description>
+    <item>
+      <title>ExampleAI announces an open weights reasoning model</title>
+      <link>https://example-ai.com/blog/open-weights-model-launch</link>
+      <guid>https://example-ai.com/blog/open-weights-model-launch#guid-1</guid>
+      <pubDate>Fri, 11 Sep 2026 08:00:00 GMT</pubDate>
+      <description>We are releasing our new open weights reasoning model for LLM applications. Free tier access is available.</description>
+    </item>
+    <item>
+      <title>ExampleAI publishes a workflow automation integration guide</title>
+      <link>https://example-ai.com/blog/automation-integration-guide</link>
+      <guid>https://example-ai.com/blog/automation-integration-guide#guid-2</guid>
+      <pubDate>Thu, 10 Sep 2026 09:00:00 GMT</pubDate>
+      <description>A step by step guide to workflow automation with our platform.</description>
+    </item>
+    <item>
+      <title>ExampleAI office relocation announcement</title>
+      <link>https://example-ai.com/blog/office-relocation</link>
+      <guid>https://example-ai.com/blog/office-relocation#guid-3</guid>
+      <pubDate>Wed, 09 Sep 2026 09:00:00 GMT</pubDate>
+      <description>Our headquarters moves to a new building next month. Visitor parking is available on site.</description>
+    </item>
+  </channel>
+</rss>

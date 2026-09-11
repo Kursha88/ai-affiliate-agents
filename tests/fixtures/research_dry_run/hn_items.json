@@ -1,0 +1,41 @@
+{
+  "101": {
+    "id": 101,
+    "type": "story",
+    "title": "ExampleAI launches a new model for LLM applications",
+    "url": "https://example-ai.com/blog/open-weights-model-launch",
+    "time": 1789120800,
+    "score": 210,
+    "descendants": 95,
+    "by": "exampleai-fan"
+  },
+  "102": {
+    "id": 102,
+    "type": "story",
+    "title": "A practical vibe coding workflow for frontend teams",
+    "url": "https://devblog.example.net/vibe-coding-workflow",
+    "time": 1789092000,
+    "score": 120,
+    "descendants": 12,
+    "by": "frontendfan"
+  },
+  "103": {
+    "id": 103,
+    "type": "story",
+    "title": "Ask HN: What is your vibe coding workflow for small teams?",
+    "time": 1789034400,
+    "score": 87,
+    "descendants": 52,
+    "by": "smallteam"
+  },
+  "104": {
+    "id": 104,
+    "type": "story",
+    "title": "ExampleAI releases a step by step tutorial for the new LLM reasoning model",
+    "url": "https://example-ai.com/blog/agentic-coding-assistant-tutorial",
+    "time": 1789117200,
+    "score": 45,
+    "descendants": 30,
+    "by": "tutorialreader"
+  }
+}
