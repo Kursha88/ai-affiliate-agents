@@ -59,7 +59,11 @@ def _get_channel_link() -> str:
     return f"https://t.me/{username}"
 
 
-def create_content_plan(news_item: Optional[dict] = None) -> dict:
+def create_content_plan(
+    news_item: Optional[dict] = None,
+    *,
+    persist_history: bool = True,
+) -> dict:
     """
     Основная функция агента Strategist.
     Создаёт план для одного поста.
@@ -137,7 +141,10 @@ def create_content_plan(news_item: Optional[dict] = None) -> dict:
         if not partners:
             # Нет активных партнёрок — работаем в growth режиме
             print("[Strategist] Нет активных партнёрок — переключаюсь в growth режим")
-            return create_content_plan(news_item=news_item)
+            return create_content_plan(
+                news_item=news_item,
+                persist_history=persist_history,
+            )
 
         topics = settings["content"]["topics"]
         used_topics = [h.get("topic") for h in history[-len(topics):]]
@@ -174,19 +181,20 @@ def create_content_plan(news_item: Optional[dict] = None) -> dict:
         }
 
     # ─── Сохраняем в историю ───────────────────────────────────────
-    history.append({
-        "date": datetime.now().strftime("%Y-%m-%d"),
-        "topic": topic,
-        "format": format_,
-        "product": plan["product"]["id"],
-        "mode": plan["mode"],
-    })
+    if persist_history:
+        history.append({
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "topic": topic,
+            "format": format_,
+            "product": plan["product"]["id"],
+            "mode": plan["mode"],
+        })
 
-    # Храним только последние 30 записей
-    if len(history) > 30:
-        history = history[-30:]
+        # Храним только последние 30 записей
+        if len(history) > 30:
+            history = history[-30:]
 
-    _save_json("data/topic_history.json", history)
+        _save_json("data/topic_history.json", history)
 
     return plan
 
