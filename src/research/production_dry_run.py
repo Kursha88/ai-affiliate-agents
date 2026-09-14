@@ -1,14 +1,15 @@
-"""Live end-to-end production dry run (Stage 3.2, Step 13H-B).
+"""Live end-to-end production dry run (Stage 3.2, Step 14G).
 
-Diagnostic-only runner for the REAL production chain:
+Diagnostic-only runner mirroring the REAL production discovery path:
 
     Config.get_research_config() -> run_live_research() ->
-    research_result_to_news_item() -> create_content_plan(persist_history=False)
-    -> validate_content_plan() -> human-readable report
+    run_select_stage() -> content_candidate_to_news_item() ->
+    create_content_plan(persist_history=False) -> validate_content_plan()
+    -> human-readable report
 
 It MUST stop before StateService/ContentItem persistence, publication,
 copywriting, editing, design, Telegram and any DB/state write. An empty
-research shortlist is reported honestly (stop_reason="no_ranked_candidate")
+SELECT outcome is reported honestly (stop_reason="no_selected_candidate")
 and is NOT hidden behind an editorial fallback. Exceptions propagate
 unchanged: this runner fails loudly on implementation defects.
 
@@ -23,8 +24,9 @@ from datetime import datetime, timezone
 
 from src.agents.strategist import create_content_plan
 from src.core.config import Config
-from src.research.legacy_bridge import research_result_to_news_item
+from src.research.legacy_bridge import content_candidate_to_news_item
 from src.research.live import run_live_research
+from src.research.select_stage import run_select_stage
 from src.utils.validators import validate_content_plan
 
 DRY_RUN_LIMIT = 5
@@ -33,6 +35,7 @@ DRY_RUN_LIMIT = 5
 @dataclass(frozen=True)
 class ProductionDryRunResult:
     research_result: object
+    selected_candidate: object | None
     news_item: dict | None
     plan: dict | None
     validation: dict | None
@@ -52,23 +55,26 @@ def run_production_dry_run(
         limit=limit,
         **research_config.live_kwargs(),
     )
-    news_item = research_result_to_news_item(research_result, now=now)
+    selected_candidate = run_select_stage(research_result)
 
-    if news_item is None:
+    if selected_candidate is None:
         return ProductionDryRunResult(
             research_result=research_result,
+            selected_candidate=None,
             news_item=None,
             plan=None,
             validation=None,
             used_fallback=False,
-            stop_reason="no_ranked_candidate",
+            stop_reason="no_selected_candidate",
         )
 
+    news_item = content_candidate_to_news_item(selected_candidate, now=now)
     plan = create_content_plan(news_item=news_item, persist_history=False)
     validation = validate_content_plan(plan)
 
     return ProductionDryRunResult(
         research_result=research_result,
+        selected_candidate=selected_candidate,
         news_item=news_item,
         plan=plan,
         validation=validation,
@@ -81,7 +87,7 @@ def format_production_dry_run(result: ProductionDryRunResult) -> str:
     """Concise human-readable report. Display only — nothing is recomputed."""
     research = result.research_result
     lines = [
-        "Researcher 2.0 → Strategist LIVE dry run",
+        "Researcher 2.0 -> SELECT -> Strategist LIVE dry run",
         "",
         "Research:",
         f"input={research.input_count}",
@@ -93,6 +99,20 @@ def format_production_dry_run(result: ProductionDryRunResult) -> str:
         "",
         "Selected:",
     ]
+    selected = result.selected_candidate
+    if selected is not None:
+        lines.append(f"title={selected.candidate.title}")
+        lines.append(f"cluster={selected.candidate.content_cluster.value}")
+        selection = selected.selection
+        recommended = selection.recommended_format
+        fmt = recommended.value if recommended is not None else ""
+        lines.append(f"format={fmt}")
+        lines.append(f"research_required={selection.research_required}")
+        lines.append(f"experiment_required={selection.experiment_required}")
+    else:
+        lines.append("(empty)")
+
+    lines += ["", "Legacy news_item:"]
     if result.news_item is not None:
         item = result.news_item
         lines.append(f"title={item['title']}")

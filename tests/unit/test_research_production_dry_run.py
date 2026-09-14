@@ -1,10 +1,13 @@
 """Step 13H-B unit tests: live end-to-end production dry run.
 
+Regression coverage, migrated in Step 14G-FIX to the SELECT-stage contract
+(run_live_research -> run_select_stage -> content_candidate_to_news_item).
 Patches every dependency WHERE USED in ``src.research.production_dry_run``:
-Config, run_live_research, research_result_to_news_item, create_content_plan,
-validate_content_plan. No live network, no filesystem writes, no real
-Strategist execution. Structural AST tests bind the side-effect boundaries to
-actual code (docstring-immune by construction).
+Config, run_live_research, run_select_stage, content_candidate_to_news_item,
+create_content_plan, validate_content_plan. No live network, no filesystem
+writes, no real Strategist execution. Full new-path coverage lives in
+tests/unit/test_production_dry_run_select_path.py. Structural AST tests bind
+the side-effect boundaries to actual code (docstring-immune by construction).
 """
 
 import ast
@@ -36,6 +39,7 @@ class _Harness(unittest.TestCase):
 
     def setUp(self):
         self.research_result = object()  # identity sentinel
+        self.selected_candidate = object()  # identity sentinel
         self.plan = {"topic": "T", "format": "Case", "mode": "growth", "platform": "telegram"}
         self.validation = {"valid": True, "issues": []}
 
@@ -47,8 +51,11 @@ class _Harness(unittest.TestCase):
         self.m_run_live = mock.patch.object(
             pdr, "run_live_research", return_value=self.research_result
         ).start()
+        self.m_select = mock.patch.object(
+            pdr, "run_select_stage", return_value=self.selected_candidate
+        ).start()
         self.m_bridge = mock.patch.object(
-            pdr, "research_result_to_news_item", return_value=dict(NEWS_ITEM)
+            pdr, "content_candidate_to_news_item", return_value=dict(NEWS_ITEM)
         ).start()
         self.m_create = mock.patch.object(
             pdr, "create_content_plan", return_value=self.plan
@@ -92,13 +99,21 @@ class TestSuccessfulPath(_Harness):
             kwargs["trusted_primary_domains"], LIVE_KWARGS["trusted_primary_domains"]
         )
 
+    def test_select_stage_called_exactly_once(self):
+        self.run_dry(limit=3)
+        self.m_select.assert_called_once()
+
+    def test_select_stage_receives_same_research_result_object(self):
+        self.run_dry(limit=3)
+        self.assertIs(self.m_select.call_args.args[0], self.research_result)
+
     def test_bridge_called_exactly_once(self):
         self.run_dry(limit=3)
         self.m_bridge.assert_called_once()
 
-    def test_bridge_receives_same_research_result_object(self):
+    def test_bridge_receives_same_selected_candidate_object(self):
         self.run_dry(limit=3)
-        self.assertIs(self.m_bridge.call_args.args[0], self.research_result)
+        self.assertIs(self.m_bridge.call_args.args[0], self.selected_candidate)
 
     def test_bridge_receives_same_injected_now(self):
         self.run_dry(limit=3)
@@ -124,6 +139,10 @@ class TestSuccessfulPath(_Harness):
         result = self.run_dry(limit=3)
         self.assertIs(result.research_result, self.research_result)
 
+    def test_result_preserves_selected_candidate_identity(self):
+        result = self.run_dry(limit=3)
+        self.assertIs(result.selected_candidate, self.selected_candidate)
+
     def test_result_preserves_news_item_identity(self):
         result = self.run_dry(limit=3)
         self.assertIs(result.news_item, self.m_bridge.return_value)
@@ -141,10 +160,20 @@ class TestSuccessfulPath(_Harness):
         self.assertFalse(ok.used_fallback)
 
 
-class TestEmptyShortlistPath(_Harness):
+class TestNoSelectedCandidatePath(_Harness):
+    """SELECT stage returned no winner -> bridge/strategist/validator skipped."""
+
     def setUp(self):
         super().setUp()
-        self.m_bridge.return_value = None
+        self.m_select.return_value = None
+
+    def test_selected_candidate_is_none(self):
+        result = self.run_dry(limit=3)
+        self.assertIsNone(result.selected_candidate)
+
+    def test_bridge_not_called(self):
+        self.run_dry(limit=3)
+        self.m_bridge.assert_not_called()
 
     def test_strategist_not_called(self):
         self.run_dry(limit=3)
@@ -166,9 +195,9 @@ class TestEmptyShortlistPath(_Harness):
         result = self.run_dry(limit=3)
         self.assertIsNone(result.validation)
 
-    def test_stop_reason_no_ranked_candidate(self):
+    def test_stop_reason_no_selected_candidate(self):
         result = self.run_dry(limit=3)
-        self.assertEqual(result.stop_reason, "no_ranked_candidate")
+        self.assertEqual(result.stop_reason, "no_selected_candidate")
 
     def test_used_fallback_still_false(self):
         result = self.run_dry(limit=3)
@@ -194,6 +223,11 @@ class TestExceptionPropagation(_Harness):
     def test_researcher_exception_propagates(self):
         self.m_run_live.side_effect = RuntimeError("research boom")
         with self.assertRaisesRegex(RuntimeError, "research boom"):
+            self.run_dry(limit=3)
+
+    def test_select_stage_exception_propagates(self):
+        self.m_select.side_effect = ValueError("select boom")
+        with self.assertRaisesRegex(ValueError, "select boom"):
             self.run_dry(limit=3)
 
     def test_bridge_exception_propagates(self):
@@ -228,9 +262,37 @@ class _FakeResearch:
         self.ranked = _FakeRanked(ranked_count)
 
 
+class _FakeCluster:
+    value = "vibe_coding"
+
+
+class _FakeFormat:
+    value = "practical_guide"
+
+
+class _FakeSelection:
+    def __init__(self):
+        self.recommended_format = _FakeFormat()
+        self.research_required = False
+        self.experiment_required = True
+
+
+class _FakeDiscovery:
+    def __init__(self):
+        self.title = "VibeWorks CLI"
+        self.content_cluster = _FakeCluster()
+
+
+class _FakeSelected:
+    def __init__(self):
+        self.candidate = _FakeDiscovery()
+        self.selection = _FakeSelection()
+
+
 def _full_result(**overrides):
     kwargs = dict(
         research_result=_FakeResearch(),
+        selected_candidate=_FakeSelected(),
         news_item=dict(NEWS_ITEM),
         plan=dict(PLAN),
         validation={"valid": True, "issues": []},
@@ -244,7 +306,7 @@ def _full_result(**overrides):
 class TestFormatter(unittest.TestCase):
     def test_contains_exact_research_counts(self):
         text = pdr.format_production_dry_run(_full_result())
-        self.assertIn("Researcher 2.0 → Strategist LIVE dry run", text)
+        self.assertIn("Researcher 2.0 -> SELECT -> Strategist LIVE dry run", text)
         self.assertIn("input=11", text)
         self.assertIn("deduplicated=10", text)
         self.assertIn("classified=10", text)
@@ -252,8 +314,17 @@ class TestFormatter(unittest.TestCase):
         self.assertIn("scored=10", text)
         self.assertIn("ranked=8", text)
 
-    def test_contains_selected_item_fields(self):
+    def test_selected_section_comes_from_selected_candidate(self):
         text = pdr.format_production_dry_run(_full_result())
+        self.assertIn("title=VibeWorks CLI", text)
+        self.assertIn("cluster=vibe_coding", text)
+        self.assertIn("format=practical_guide", text)
+        self.assertIn("research_required=False", text)
+        self.assertIn("experiment_required=True", text)
+
+    def test_contains_legacy_news_item_fields(self):
+        text = pdr.format_production_dry_run(_full_result())
+        self.assertIn("Legacy news_item:", text)
         self.assertIn(f"title={NEWS_ITEM['title']}", text)
         self.assertIn(f"source={NEWS_ITEM['source']}", text)
         self.assertIn(f"url={NEWS_ITEM['url']}", text)
@@ -271,13 +342,13 @@ class TestFormatter(unittest.TestCase):
         self.assertIn("valid=True", text)
         self.assertIn("issues=[]", text)
 
-    def test_empty_shortlist_report(self):
+    def test_no_selected_candidate_report(self):
         text = pdr.format_production_dry_run(
-            _full_result(news_item=None, plan=None, validation=None,
-                         stop_reason="no_ranked_candidate")
+            _full_result(selected_candidate=None, news_item=None, plan=None,
+                         validation=None, stop_reason="no_selected_candidate")
         )
         self.assertIn("(empty)", text)
-        self.assertIn("stop_reason=no_ranked_candidate", text)
+        self.assertIn("stop_reason=no_selected_candidate", text)
 
 
 def _tree():
@@ -349,10 +420,18 @@ class TestStructuralBoundaries(unittest.TestCase):
             "editor", "Editor", "designer", "Designer",
             "telegram", "Telegram", "ContentItem", "Publication",
             "twitter", "vk", "pinterest",
+            "research_result_to_news_item",
+            "select_research_result_winner", "select_shortlist_winner",
+            "select_ranked_candidate", "build_selected_content_candidate",
         }
         ids = _identifiers(self.tree)
         leaks = sorted(i for i in ids if i in forbidden)
         self.assertEqual(leaks, [])
+
+    def test_select_stage_entry_points_present(self):
+        ids = _identifiers(self.tree)
+        self.assertIn("run_select_stage", ids)
+        self.assertIn("content_candidate_to_news_item", ids)
 
     def test_no_filesystem_write(self):
         for node in ast.walk(self.tree):
