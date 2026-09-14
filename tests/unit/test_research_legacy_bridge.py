@@ -248,6 +248,8 @@ class TestStructuralBoundaries(unittest.TestCase):
         )
 
     def test_only_allowed_imports(self):
+        # Step 14F-A added the mandated domain imports (ContentCandidate,
+        # CandidateStage) required for the second bridge path.
         modules, names = set(), set()
         for node in ast.walk(self.tree):
             if isinstance(node, ast.Import):
@@ -255,8 +257,13 @@ class TestStructuralBoundaries(unittest.TestCase):
             elif isinstance(node, ast.ImportFrom):
                 modules.add(node.module or "")
                 names.update(alias.name for alias in node.names)
-        self.assertEqual(modules, {"datetime", "src.research.researcher"})
-        self.assertEqual(names, {"datetime", "ResearchResult"})
+        self.assertEqual(
+            modules, {"datetime", "src.research.researcher", "src.domain.strategy"}
+        )
+        self.assertEqual(
+            names,
+            {"datetime", "ResearchResult", "CandidateStage", "ContentCandidate"},
+        )
 
     def test_forbidden_imports_absent(self):
         banned_modules = {

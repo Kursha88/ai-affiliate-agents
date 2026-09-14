@@ -14,13 +14,21 @@ network I/O, instantiates no adapters, and touches no DB/state/files.
 It does not re-rank, re-score, classify or verify anything: it reads
 ONLY the first ranked candidate of the given result and maps existing
 fields into the legacy shape.
+
+Step 14F-A adds a SECOND compatibility path: an already-selected
+``ContentCandidate`` maps to the same legacy news_item shape with the
+SAME title rule, URL passthrough and age semantics — both functions
+share the ``_legacy_age_hours`` helper, and the original
+``research_result_to_news_item`` remains behaviorally unchanged as
+rollback compatibility code.
 """
 
 from datetime import datetime
 
+from src.domain.strategy import CandidateStage, ContentCandidate
 from src.research.researcher import ResearchResult
 
-__all__ = ["research_result_to_news_item"]
+__all__ = ["research_result_to_news_item", "content_candidate_to_news_item"]
 
 _ERROR_NOW_NAIVE = "now must be timezone-aware"
 _ERROR_PUBLISHED_NAIVE = "published_at must be timezone-aware"
@@ -29,6 +37,38 @@ _ERROR_PUBLISHED_NAIVE = "published_at must be timezone-aware"
 def _is_timezone_aware(value: datetime) -> bool:
     """Return True only when ``value`` carries a usable UTC offset."""
     return value.tzinfo is not None and value.utcoffset() is not None
+
+
+def _legacy_age_hours(
+    published_at,
+    *,
+    now: datetime,
+) -> float | int:
+    """Shared legacy age semantics for both bridge functions.
+
+    ``published_at is None`` -> 0 (``now`` is not even inspected).
+    Otherwise ``now`` must be a timezone-aware datetime and
+    ``published_at`` a timezone-aware datetime or ISO-8601 string;
+    future timestamps clamp to 0, otherwise the age is rounded to 2
+    decimals. This is the EXACT logic previously inlined in
+    ``research_result_to_news_item``, extracted unchanged so both
+    bridges stay identical.
+    """
+    if published_at is None:
+        return 0
+    if not isinstance(now, datetime) or not _is_timezone_aware(now):
+        raise ValueError(_ERROR_NOW_NAIVE)
+    if isinstance(published_at, datetime):
+        published_dt = published_at
+    elif isinstance(published_at, str):
+        # Adapter-normalized ISO-8601 string (both bridge paths).
+        published_dt = datetime.fromisoformat(published_at)
+    else:
+        raise ValueError(_ERROR_PUBLISHED_NAIVE)
+    if not _is_timezone_aware(published_dt):
+        raise ValueError(_ERROR_PUBLISHED_NAIVE)
+    age = (now - published_dt).total_seconds() / 3600
+    return 0 if age < 0 else round(age, 2)
 
 
 def research_result_to_news_item(
@@ -65,23 +105,7 @@ def research_result_to_news_item(
     if not isinstance(title, str) or not title.strip():
         raise ValueError("ranked candidate title is empty")
 
-    published_at = candidate.discovery.published_at
-    if published_at is None:
-        age_hours = 0
-    else:
-        if not isinstance(now, datetime) or not _is_timezone_aware(now):
-            raise ValueError(_ERROR_NOW_NAIVE)
-        if isinstance(published_at, datetime):
-            published_dt = published_at
-        elif isinstance(published_at, str):
-            # RawDiscovery.published_at is the adapter-normalized ISO string.
-            published_dt = datetime.fromisoformat(published_at)
-        else:
-            raise ValueError(_ERROR_PUBLISHED_NAIVE)
-        if not _is_timezone_aware(published_dt):
-            raise ValueError(_ERROR_PUBLISHED_NAIVE)
-        age = (now - published_dt).total_seconds() / 3600
-        age_hours = 0 if age < 0 else round(age, 2)
+    age_hours = _legacy_age_hours(candidate.discovery.published_at, now=now)
 
     url = candidate.discovery.url
     return {
@@ -89,4 +113,38 @@ def research_result_to_news_item(
         "source": candidate.source_type.value,
         "url": "" if url is None else str(url),
         "age_hours": age_hours,
+    }
+
+
+def content_candidate_to_news_item(
+    candidate: ContentCandidate,
+    *,
+    now: datetime,
+) -> dict:
+    """Convert an already-selected ``ContentCandidate`` to legacy news_item.
+
+    Returns exactly ``{"title", "source", "url", "age_hours"}`` with the
+    SAME legacy semantics as ``research_result_to_news_item``: identical
+    title rule, URL returned exactly (never str()/normalized/stripped),
+    and the shared ``_legacy_age_hours`` helper.
+
+    Requires a ``CandidateStage.SELECTED`` candidate carrying a selected
+    ``StrategicSelection``; no other stage/selection validation.
+    """
+    if candidate.stage is not CandidateStage.SELECTED:
+        raise ValueError("content candidate is not selected")
+    if candidate.selection is None:
+        raise ValueError("content candidate missing strategic selection")
+    if candidate.selection.selected is not True:
+        raise ValueError("strategic selection is not selected")
+
+    title = candidate.candidate.title
+    if not isinstance(title, str) or not title.strip():
+        raise ValueError("ranked candidate title is empty")
+
+    return {
+        "title": title,
+        "source": candidate.candidate.source_type.value,
+        "url": candidate.candidate.source_url,
+        "age_hours": _legacy_age_hours(candidate.candidate.published_at, now=now),
     }
