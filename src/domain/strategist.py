@@ -38,6 +38,11 @@ justify new enums. No field has a default: every value must be supplied
 explicitly so no strategy decision can happen silently. No validation,
 no normalization, and no serialization (to_dict / from_dict) is defined
 in this step.
+
+The nine strategist-owned enrichment fields are additionally available
+as the standalone ``StrategistEnrichment`` contract (Step 15D-A):
+exactly the payload the deterministic Strategist Policy Engine will
+produce — it contains no SELECT-owned fields.
 """
 
 from dataclasses import dataclass
@@ -52,6 +57,7 @@ from src.domain.strategy import (
 
 __all__ = [
     "StrategistInput",
+    "StrategistEnrichment",
     "StrategistPlan",
 ]
 
@@ -67,6 +73,34 @@ class StrategistInput:
     """
 
     content_candidate: ContentCandidate
+
+
+@dataclass(frozen=True)
+class StrategistEnrichment:
+    """Strategist-owned enrichment fields ONLY (Step 15D-A).
+
+    Exactly the payload the deterministic Strategist Policy Engine will
+    produce for a selected candidate. Contains NO SELECT-owned fields
+    (candidate_id, topic, content_cluster, content_format,
+    target_platforms, research_required, experiment_required) — those
+    remain in ``ContentCandidate`` / ``StrategistPlan``. Every field is
+    required (no defaults, no default_factory), the dataclass is frozen,
+    and there is no validation, normalization, serialization or any
+    other method — contracts only.
+    """
+
+    angle: str
+    hook: str
+    objective: str
+
+    cta: str
+    cta_link: str
+
+    tone: str
+    structure: Tuple[str, ...]
+
+    language: str
+    mode: str
 
 
 @dataclass(frozen=True)

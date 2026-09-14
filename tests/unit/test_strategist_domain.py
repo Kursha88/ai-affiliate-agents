@@ -1,4 +1,8 @@
-"""Step 15A — Strategist 2.0 domain contracts (StrategistInput / StrategistPlan).
+"""Strategist 2.0 domain contracts (StrategistInput / StrategistPlan).
+
+Step 15A: StrategistInput / StrategistPlan contracts.
+Step 15D-A: adds StrategistEnrichment (strategist-owned enrichment
+fields only) to the same module — no new test file.
 
 Tests use real existing types from src.domain.strategy. For the
 StrategistInput identity/frozen behavior tests a bare
@@ -23,7 +27,11 @@ from src.domain.strategy import (
     TargetPlatform,
     VerificationResult,
 )
-from src.domain.strategist import StrategistInput, StrategistPlan
+from src.domain.strategist import (
+    StrategistEnrichment,
+    StrategistInput,
+    StrategistPlan,
+)
 
 MODULE_PATH = Path("src/domain/strategist.py")
 
@@ -33,6 +41,23 @@ SELECTED_PLATFORMS: Tuple[TargetPlatform, ...] = (
     TargetPlatform.LINKEDIN,
 )
 STRUCTURE: Tuple[str, ...] = ("hook", "body", "cta")
+
+
+def make_enrichment(**overrides) -> StrategistEnrichment:
+    """Build a valid StrategistEnrichment (all fields required)."""
+    values = {
+        "angle": "hands-on angle",
+        "hook": "Your IDE just got an agent",
+        "objective": "teach the reader to try it today",
+        "cta": "Try it yourself",
+        "cta_link": "https://example.com/repo",
+        "tone": "practical",
+        "structure": ("hook", "body", "cta"),
+        "language": "ru",
+        "mode": "growth",
+    }
+    values.update(overrides)
+    return StrategistEnrichment(**values)
 
 
 def make_plan(**overrides) -> StrategistPlan:
@@ -275,8 +300,187 @@ class TestStrategistPlan(unittest.TestCase):
                     setattr(self.plan, name, value)
 
 
+class TestStrategistEnrichment(unittest.TestCase):
+    """Step 15D-A, tests 1-23: StrategistEnrichment contract."""
+
+    def setUp(self):
+        self.enrichment = make_enrichment()
+
+    # 1
+    def test_is_dataclass(self):
+        self.assertTrue(dataclasses.is_dataclass(StrategistEnrichment))
+
+    # 2
+    def test_is_frozen(self):
+        with self.assertRaises(dataclasses.FrozenInstanceError):
+            self.enrichment._probe = 1
+
+    # 3
+    def test_field_order_exact(self):
+        self.assertEqual(
+            [f.name for f in dataclasses.fields(StrategistEnrichment)],
+            [
+                "angle",
+                "hook",
+                "objective",
+                "cta",
+                "cta_link",
+                "tone",
+                "structure",
+                "language",
+                "mode",
+            ],
+        )
+
+    # 4-12
+    def test_field_annotations(self):
+        hints = get_type_hints(StrategistEnrichment)
+        expected = {
+            "angle": str,
+            "hook": str,
+            "objective": str,
+            "cta": str,
+            "cta_link": str,
+            "tone": str,
+            "structure": Tuple[str, ...],
+            "language": str,
+            "mode": str,
+        }
+        for name, annotation in expected.items():
+            with self.subTest(field=name):
+                self.assertEqual(hints[name], annotation)
+
+    # 13
+    def test_no_defaults(self):
+        for f in dataclasses.fields(StrategistEnrichment):
+            with self.subTest(field=f.name):
+                self.assertEqual(f.default, dataclasses.MISSING)
+                self.assertEqual(f.default_factory, dataclasses.MISSING)
+
+    # 14
+    def test_exact_strings_preserved(self):
+        values = {
+            "angle": "hands-on angle",
+            "hook": "Your IDE just got an agent",
+            "objective": "teach the reader",
+            "cta": "Try it",
+            "cta_link": "https://example.com/repo",
+            "tone": "practical",
+            "language": "ru",
+            "mode": "growth",
+        }
+        enrichment = make_enrichment(**values)
+        for name, value in values.items():
+            with self.subTest(field=name):
+                self.assertEqual(getattr(enrichment, name), value)
+
+    # 15
+    def test_unicode_emoji_strings_preserved(self):
+        values = {
+            "angle": "угол  <>&✨",
+            "hook": "хук 🚀 /:@#",
+            "objective": "цель — 100%",
+            "cta": "CTA→🚀",
+            "cta_link": "https://example.com/cta?x=1#frag",
+            "tone": "тон✌",
+            "language": "ru-RU",
+            "mode": "mode·2026",
+        }
+        enrichment = make_enrichment(**values)
+        for name, value in values.items():
+            with self.subTest(field=name):
+                self.assertEqual(getattr(enrichment, name), value)
+
+    # 16
+    def test_empty_strings_preserved(self):
+        enrichment = make_enrichment(
+            angle="",
+            hook="",
+            objective="",
+            cta="",
+            cta_link="",
+            tone="",
+            language="",
+            mode="",
+        )
+        for name in (
+            "angle",
+            "hook",
+            "objective",
+            "cta",
+            "cta_link",
+            "tone",
+            "language",
+            "mode",
+        ):
+            with self.subTest(field=name):
+                self.assertEqual(getattr(enrichment, name), "")
+
+    # 17
+    def test_structure_preserved_by_value(self):
+        structure = ("a", "b", "c")
+        self.assertEqual(
+            make_enrichment(structure=structure).structure, structure
+        )
+
+    # 18
+    def test_structure_preserved_by_identity(self):
+        structure = ("a", "b", "c")
+        self.assertIs(
+            make_enrichment(structure=structure).structure, structure
+        )
+
+    # 19
+    def test_structure_order_preserved(self):
+        self.assertEqual(
+            make_enrichment(structure=("z", "a", "m")).structure,
+            ("z", "a", "m"),
+        )
+
+    # 20
+    def test_empty_structure_preserved(self):
+        self.assertEqual(make_enrichment(structure=()).structure, ())
+
+    # 21-22
+    def test_cannot_reassign_fields(self):
+        for name, value in (("angle", "other"), ("structure", ())):
+            with self.subTest(field=name):
+                with self.assertRaises(dataclasses.FrozenInstanceError):
+                    setattr(self.enrichment, name, value)
+
+    # 23
+    def test_no_select_owned_fields(self):
+        select_owned = {
+            "candidate_id",
+            "topic",
+            "content_cluster",
+            "content_format",
+            "target_platforms",
+            "research_required",
+            "experiment_required",
+        }
+        field_names = {
+            f.name for f in dataclasses.fields(StrategistEnrichment)
+        }
+        self.assertEqual(field_names & select_owned, set())
+        self.assertEqual(
+            field_names,
+            {
+                "angle",
+                "hook",
+                "objective",
+                "cta",
+                "cta_link",
+                "tone",
+                "structure",
+                "language",
+                "mode",
+            },
+        )
+
+
 class TestStructuralBoundaries(unittest.TestCase):
-    """Tests 41-50: AST/introspection structural guarantees."""
+    """Tests 24-32 (15D-A numbering): AST/introspection guarantees."""
 
     @classmethod
     def setUpClass(cls):
@@ -296,16 +500,16 @@ class TestStructuralBoundaries(unittest.TestCase):
                 names.add(module)
         return names
 
-    # 41
+    # 24
     def test_all_exports_exact(self):
         import src.domain.strategist as module
 
         self.assertEqual(
             list(module.__all__),
-            ["StrategistInput", "StrategistPlan"],
+            ["StrategistInput", "StrategistEnrichment", "StrategistPlan"],
         )
 
-    # 42
+    # 26
     def test_no_enum_classes(self):
         enum_bases = [
             node
@@ -319,42 +523,45 @@ class TestStructuralBoundaries(unittest.TestCase):
         ]
         self.assertEqual(enum_bases, [])
 
-    # 43
-    def test_exactly_two_public_classes(self):
+    # 25
+    def test_exactly_three_public_classes(self):
         classes = [
             node.name
             for node in self.tree.body
             if isinstance(node, ast.ClassDef)
         ]
-        self.assertEqual(classes, ["StrategistInput", "StrategistPlan"])
+        self.assertEqual(
+            classes,
+            ["StrategistInput", "StrategistEnrichment", "StrategistPlan"],
+        )
 
-    # 44
+    # 27
     def test_no_post_init(self):
         for node in ast.walk(self.tree):
             if isinstance(node, ast.ClassDef):
                 defined = [f.name for f in node.body if isinstance(f, ast.FunctionDef)]
                 self.assertNotIn("__post_init__", defined)
 
-    # 45
+    # 28
     def test_no_to_dict(self):
         for node in ast.walk(self.tree):
             if isinstance(node, ast.ClassDef):
                 defined = [f.name for f in node.body if isinstance(f, ast.FunctionDef)]
                 self.assertNotIn("to_dict", defined)
 
-    # 46
+    # 28
     def test_no_from_dict(self):
         for node in ast.walk(self.tree):
             if isinstance(node, ast.ClassDef):
                 defined = [f.name for f in node.body if isinstance(f, ast.FunctionDef)]
                 self.assertNotIn("from_dict", defined)
 
-    # 47
+    # 30
     def test_no_forbidden_utility_imports(self):
         banned = {"datetime", "random", "os", "pathlib", "yaml", "requests"}
         self.assertEqual(self._imported_names() & banned, set())
 
-    # 48
+    # 31
     def test_no_app_forbidden_imports(self):
         banned = {
             "Config",
@@ -378,7 +585,7 @@ class TestStructuralBoundaries(unittest.TestCase):
             modules & {"src.agents.strategist", "src.core.config"}, set()
         )
 
-    # 49
+    # 29
     def test_no_mapping_or_generation_functions(self):
         banned_names = {
             "build_input",
@@ -410,12 +617,13 @@ class TestStructuralBoundaries(unittest.TestCase):
         ]
         self.assertEqual(method_names, [])
 
-    # 50
+    # 32
     def test_no_mutable_list_annotations(self):
         source_no_strings = ast.unparse(self.tree)
         self.assertNotIn("List[", source_no_strings)
         self.assertNotIn("list[", source_no_strings)
         hints = get_type_hints(StrategistInput)
+        hints.update(get_type_hints(StrategistEnrichment))
         hints.update(get_type_hints(StrategistPlan))
         for name, annotation in hints.items():
             self.assertNotEqual(
