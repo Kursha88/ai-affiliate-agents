@@ -7,7 +7,8 @@ from src.utils.logger import get_logger
 from src.utils.validators import is_fallback_text, validate_content_plan
 from src.agents.news_hunter import get_fallback_topic
 from src.research.live import run_live_research
-from src.research.legacy_bridge import research_result_to_news_item
+from src.research.select_stage import run_select_stage
+from src.research.legacy_bridge import content_candidate_to_news_item
 from src.agents.strategist import create_content_plan
 from src.agents.copywriter import write_post
 from src.agents.editor import edit_post
@@ -153,9 +154,10 @@ def _get_production_news_item(*, now: datetime, log) -> dict:
     Production Step 0 discovery: Researcher 2.0 — основной путь.
 
     Config.get_research_config() → run_live_research() →
-    research_result_to_news_item(). Любая ошибка Researcher не критична:
-    используется legacy fallback. Ошибки самого fallback распространяются
-    дальше (вызов get_fallback_topic() вне try/except).
+    run_select_stage() → content_candidate_to_news_item(). Любая ошибка
+    Researcher-пути не критична: используется legacy fallback. Ошибки
+    самого fallback распространяются дальше (вызов get_fallback_topic()
+    вне try/except).
     """
     try:
         research_config = Config.get_research_config()
@@ -164,7 +166,14 @@ def _get_production_news_item(*, now: datetime, log) -> dict:
             limit=5,
             **research_config.live_kwargs(),
         )
-        news_item = research_result_to_news_item(result, now=now)
+        selected_candidate = run_select_stage(result)
+        if selected_candidate is None:
+            news_item = None
+        else:
+            news_item = content_candidate_to_news_item(
+                selected_candidate,
+                now=now,
+            )
     except Exception as e:
         log.warning(f"Ошибка Researcher 2.0 (не критично): {e}")
     else:

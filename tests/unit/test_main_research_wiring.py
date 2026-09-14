@@ -1,4 +1,10 @@
-"""Unit tests for Researcher 2.0 wiring into production Step 0 (Step 13G)."""
+"""Unit tests for Researcher 2.0 wiring into production Step 0.
+
+Step 13G regression coverage, migrated in Step 14F-B-FIX to the SELECT-stage
+production path (run_live_research -> run_select_stage ->
+content_candidate_to_news_item). Full new-path coverage lives in
+tests/unit/test_main_research_select_wiring.py.
+"""
 
 import ast
 import sys
@@ -50,16 +56,19 @@ class _WiringTestCase(unittest.TestCase):
     def setUp(self):
         self.config_patcher = patch("src.main.Config")
         self.research_patcher = patch("src.main.run_live_research")
-        self.bridge_patcher = patch("src.main.research_result_to_news_item")
+        self.select_stage_patcher = patch("src.main.run_select_stage")
+        self.bridge_patcher = patch("src.main.content_candidate_to_news_item")
         self.fallback_patcher = patch("src.main.get_fallback_topic")
 
         self.config_m = self.config_patcher.start()
         self.research_m = self.research_patcher.start()
+        self.select_stage_m = self.select_stage_patcher.start()
         self.bridge_m = self.bridge_patcher.start()
         self.fallback_m = self.fallback_patcher.start()
         for patcher in (
             self.config_patcher,
             self.research_patcher,
+            self.select_stage_patcher,
             self.bridge_patcher,
             self.fallback_patcher,
         ):
@@ -69,6 +78,8 @@ class _WiringTestCase(unittest.TestCase):
         self.config_m.get_research_config.return_value = self.fake_config
         self.fake_result = object()  # plain fake ResearchResult
         self.research_m.return_value = self.fake_result
+        self.selected_candidate = object()  # plain fake selected candidate
+        self.select_stage_m.return_value = self.selected_candidate
         self.bridge_m.return_value = dict(NEWS_ITEM)
         self.fallback_m.return_value = dict(FALLBACK_ITEM)
 
@@ -114,13 +125,21 @@ class TestSuccessfulResearchPath(_WiringTestCase):
             {"now", "limit", "blog_feeds", "docs_feeds", "trusted_primary_domains"},
         )
 
+    def test_select_stage_called_once(self):
+        self.run_helper()
+        self.select_stage_m.assert_called_once()
+
+    def test_select_stage_receives_exact_research_result(self):
+        self.run_helper()
+        self.assertIs(self.select_stage_m.call_args.args[0], self.fake_result)
+
     def test_bridge_called_once(self):
         self.run_helper()
         self.bridge_m.assert_called_once()
 
-    def test_bridge_receives_exact_research_result(self):
+    def test_bridge_receives_exact_selected_candidate(self):
         self.run_helper()
-        self.assertIs(self.bridge_m.call_args.args[0], self.fake_result)
+        self.assertIs(self.bridge_m.call_args.args[0], self.selected_candidate)
 
     def test_bridge_receives_injected_now(self):
         self.run_helper()
@@ -145,9 +164,15 @@ class TestSuccessfulResearchPath(_WiringTestCase):
 
 
 class TestEmptyResultFallbackPath(_WiringTestCase):
+    """SELECT stage returned no winner -> bridge skipped, fallback used."""
+
     def setUp(self):
         super().setUp()
-        self.bridge_m.return_value = None
+        self.select_stage_m.return_value = None
+
+    def test_bridge_not_called_without_selected_candidate(self):
+        self.run_helper()
+        self.bridge_m.assert_not_called()
 
     def test_fallback_called_exactly_once(self):
         self.run_helper()
@@ -189,6 +214,12 @@ class TestExceptionFallbackPaths(_WiringTestCase):
         self.fallback_m.assert_called_once_with()
         self.assertEqual(item, FALLBACK_ITEM)
 
+    def test_select_stage_error_uses_fallback_once(self):
+        self.select_stage_m.side_effect = ValueError("select boom")
+        item = self.run_helper()
+        self.fallback_m.assert_called_once_with()
+        self.assertEqual(item, FALLBACK_ITEM)
+
     def test_bridge_error_uses_fallback_once(self):
         self.bridge_m.side_effect = ValueError("bridge boom")
         item = self.run_helper()
@@ -204,7 +235,7 @@ class TestExceptionFallbackPaths(_WiringTestCase):
         self.assertIn("Ошибка Researcher 2.0", warning_texts)
 
     def test_fallback_own_error_propagates_from_empty_result_path(self):
-        self.bridge_m.return_value = None
+        self.select_stage_m.return_value = None
         self.fallback_m.side_effect = RuntimeError("fallback boom")
         with self.assertRaises(RuntimeError):
             self.run_helper()
@@ -284,7 +315,8 @@ class TestStructuralBoundaries(unittest.TestCase):
         allowed = {
             ("attr", "Config.get_research_config"),
             ("name", "run_live_research"),
-            ("name", "research_result_to_news_item"),
+            ("name", "run_select_stage"),
+            ("name", "content_candidate_to_news_item"),
             ("name", "get_fallback_topic"),
             ("attr", "log.success"),
             ("attr", "log.warning"),
@@ -299,6 +331,13 @@ class TestStructuralBoundaries(unittest.TestCase):
             set(),
             f"unexpected calls in helper: {sorted(unexpected)}",
         )
+
+    def test_helper_does_not_reference_legacy_result_bridge(self):
+        # Step 14F-B removed the old compatibility path from production.
+        helper = self.functions["_get_production_news_item"]
+        self.assertNotIn("research_result_to_news_item", ast.unparse(helper))
+        # ...and it is no longer imported anywhere in src/main.py.
+        self.assertNotIn("research_result_to_news_item", ast.unparse(self.tree))
 
     def test_step0_uses_helper_with_utc_clock_and_log(self):
         inner = self.functions["_run_pipeline_inner"]
