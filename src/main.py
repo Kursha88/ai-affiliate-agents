@@ -11,6 +11,8 @@ from src.research.live import run_live_research
 from src.research.select_stage import run_select_stage
 from src.research.legacy_bridge import content_candidate_to_news_item
 from src.agents.strategist import create_content_plan
+from src.strategy.strategist import run_strategist
+from src.strategy.legacy_bridge import strategist_plan_to_legacy_plan
 from src.agents.copywriter import write_post
 from src.agents.editor import edit_post
 from src.agents.designer import create_image_for_post
@@ -238,7 +240,16 @@ def _run_pipeline_inner(state: StateService, run_id: str, log) -> dict:
     log.step(1, "STRATEGIST: формирую план контента")
 
     try:
-        plan = create_content_plan(news_item=news_item)
+        if discovery.selected_candidate is not None:
+            strategist_plan = run_strategist(discovery.selected_candidate)
+            plan = strategist_plan_to_legacy_plan(
+                strategist_plan,
+                created_at=datetime.now(timezone.utc).isoformat(),
+                news_source=news_item["source"],
+                news_age_hours=news_item["age_hours"],
+            )
+        else:
+            plan = create_content_plan(news_item=news_item)
 
         plan_validation = validate_content_plan(plan)
         if not plan_validation["valid"]:

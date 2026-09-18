@@ -93,9 +93,12 @@ class TestPipelineSmoke(unittest.TestCase):
             mock.patch(
                 "src.main._get_production_discovery",
                 return_value=src.main._ProductionDiscovery(
-                    selected_candidate=object(),
+                    # Step 15G-B: smoke exercises the LEGACY fallback branch
+                    # (selected_candidate=None → create_content_plan), so the
+                    # integration stays isolated from Strategist 2.0.
+                    selected_candidate=None,
                     news_item=copy.deepcopy(FIXED_NEWS),
-                    used_fallback=False,
+                    used_fallback=True,
                 ),
             ),
             mock.patch(
