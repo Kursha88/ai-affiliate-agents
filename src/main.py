@@ -1,5 +1,6 @@
 import sys
 import os
+from dataclasses import dataclass
 from datetime import datetime, date, timezone
 
 from src.core.config import Config
@@ -149,12 +150,29 @@ def run_pipeline() -> dict:
         }
 
 
-def _get_production_news_item(*, now: datetime, log) -> dict:
+@dataclass(frozen=True)
+class _ProductionDiscovery:
+    """
+    Внутренний результат Step 0 discovery (Stage 15, Step 15G-A).
+
+    Объединяет точный выбранный ContentCandidate из Researcher-пути
+    с его legacy news_item-проекцией. Кандидат сохраняется по identity
+    для следующего шага миграции и пока НЕ используется для планирования.
+    Приватный класс этого модуля by design.
+    """
+
+    selected_candidate: object | None
+    news_item: dict
+    used_fallback: bool
+
+
+def _get_production_discovery(*, now: datetime, log) -> _ProductionDiscovery:
     """
     Production Step 0 discovery: Researcher 2.0 — основной путь.
 
     Config.get_research_config() → run_live_research() →
-    run_select_stage() → content_candidate_to_news_item(). Любая ошибка
+    run_select_stage() → content_candidate_to_news_item(). Выбранный
+    кандидат сохраняется в результате без изменений. Любая ошибка
     Researcher-пути не критична: используется legacy fallback. Ошибки
     самого fallback распространяются дальше (вызов get_fallback_topic()
     вне try/except).
@@ -179,7 +197,11 @@ def _get_production_news_item(*, now: datetime, log) -> dict:
     else:
         if news_item is not None:
             log.success(f"Researcher 2.0: {news_item['title'][:60]}...")
-            return news_item
+            return _ProductionDiscovery(
+                selected_candidate=selected_candidate,
+                news_item=news_item,
+                used_fallback=False,
+            )
 
         log.warning(
             "Researcher 2.0 не вернул подходящих кандидатов — использую fallback"
@@ -187,7 +209,11 @@ def _get_production_news_item(*, now: datetime, log) -> dict:
 
     fallback = get_fallback_topic()
     log.success(f"Fallback тема: {fallback['title'][:60]}...")
-    return fallback
+    return _ProductionDiscovery(
+        selected_candidate=None,
+        news_item=fallback,
+        used_fallback=True,
+    )
 
 
 def _run_pipeline_inner(state: StateService, run_id: str, log) -> dict:
@@ -202,10 +228,11 @@ def _run_pipeline_inner(state: StateService, run_id: str, log) -> dict:
     # ─── Шаг 0: Поиск горячей темы / новости ───────────────
     log.step(0, "CONTENT HUNTER: выбираю горячую тему / лайфхак")
 
-    news_item = _get_production_news_item(
+    discovery = _get_production_discovery(
         now=datetime.now(timezone.utc),
         log=log,
     )
+    news_item = discovery.news_item
 
     # ─── Шаг 1: Strategist ───────────────────────────────
     log.step(1, "STRATEGIST: формирую план контента")
