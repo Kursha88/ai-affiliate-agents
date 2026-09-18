@@ -2,9 +2,13 @@
 
 Patches every dependency WHERE USED in ``src.main`` (Config, run_live_research,
 run_select_stage, content_candidate_to_news_item, get_fallback_topic) and
-tests ``_get_production_news_item`` directly — no full pipeline run, no
+tests ``_get_production_discovery`` directly — no full pipeline run, no
 network, no DB. Structural AST tests are focused around the imports and
-``_get_production_news_item`` only (no whole-file snapshot).
+``_get_production_discovery`` only (no whole-file snapshot).
+
+Step 15G-A-FIX migration: the helper now returns the immutable
+``_ProductionDiscovery`` (selected_candidate / news_item / used_fallback)
+instead of a bare news_item dict.
 """
 
 import ast
@@ -14,7 +18,7 @@ from types import SimpleNamespace
 from unittest import mock
 
 import src.main as main_module
-from src.main import _get_production_news_item
+from src.main import _get_production_discovery
 
 SOURCE_PATH = Path(__file__).resolve().parents[2] / "src" / "main.py"
 
@@ -64,7 +68,7 @@ class _Harness(unittest.TestCase):
         self.addCleanup(mock.patch.stopall)
 
     def run_helper(self):
-        return _get_production_news_item(now=NOW, log=self.log)
+        return _get_production_discovery(now=NOW, log=self.log)
 
 
 class TestSuccessfulSelectPath(_Harness):
@@ -107,7 +111,9 @@ class TestSuccessfulSelectPath(_Harness):
 
     def test_bridge_result_returned_unchanged(self):
         result = self.run_helper()
-        self.assertEqual(result, NEWS_ITEM)
+        self.assertEqual(result.news_item, NEWS_ITEM)
+        self.assertIs(result.selected_candidate, SELECTED_CANDIDATE)
+        self.assertIs(result.used_fallback, False)
 
     def test_successful_path_does_not_call_fallback(self):
         self.run_helper()
@@ -138,7 +144,9 @@ class TestNonePath(_Harness):
 
     def test_fallback_result_returned_unchanged(self):
         result = self.run_helper()
-        self.assertEqual(result, FALLBACK_ITEM)
+        self.assertEqual(result.news_item, FALLBACK_ITEM)
+        self.assertIsNone(result.selected_candidate)
+        self.assertIs(result.used_fallback, True)
 
     def test_warning_log_called(self):
         self.run_helper()
@@ -155,7 +163,9 @@ class TestExceptionFallbackPaths(_Harness):
     def _assert_fallback_path(self):
         result = self.run_helper()
         self.m_fallback.assert_called_once()
-        self.assertEqual(result, FALLBACK_ITEM)
+        self.assertEqual(result.news_item, FALLBACK_ITEM)
+        self.assertIsNone(result.selected_candidate)
+        self.assertIs(result.used_fallback, True)
         logged = " ".join(str(c.args[0]) for c in self.log.warning.call_args_list)
         self.assertIn("Ошибка Researcher 2.0", logged)
         return result
@@ -257,16 +267,16 @@ class TestStructuralBoundaries(unittest.TestCase):
         self.assertIn("run_live_research", imported)
 
     def test_helper_does_not_call_old_bridge(self):
-        fn = self._function("_get_production_news_item")
+        fn = self._function("_get_production_discovery")
         self.assertNotIn("research_result_to_news_item", _call_names(fn))
 
     def test_exactly_one_call_to_run_select_stage(self):
-        fn = self._function("_get_production_news_item")
+        fn = self._function("_get_production_discovery")
         calls = [name for name in _call_names(fn) if name == "run_select_stage"]
         self.assertEqual(calls, ["run_select_stage"])
 
     def test_exactly_one_call_to_content_candidate_to_news_item(self):
-        fn = self._function("_get_production_news_item")
+        fn = self._function("_get_production_discovery")
         calls = [
             name for name in _call_names(fn)
             if name == "content_candidate_to_news_item"
@@ -285,7 +295,7 @@ class TestStructuralBoundaries(unittest.TestCase):
             self.assertNotIn(token, text)
 
     def test_fallback_call_remains_outside_try_body(self):
-        fn = self._function("_get_production_news_item")
+        fn = self._function("_get_production_discovery")
         try_node = next(
             node for node in ast.walk(fn) if isinstance(node, ast.Try)
         )
@@ -316,7 +326,12 @@ class TestStructuralBoundaries(unittest.TestCase):
         )
 
         inner = self._function("_run_pipeline_inner")
-        self.assertIn("_get_production_news_item", _call_names(inner))
+        discovery_calls = [
+            name for name in _call_names(inner)
+            if name == "_get_production_discovery"
+        ]
+        self.assertEqual(discovery_calls, ["_get_production_discovery"])
+        self.assertNotIn("_get_production_news_item", _call_names(inner))
         for forbidden_call in (
             "run_select_stage", "content_candidate_to_news_item",
             "research_result_to_news_item", "get_fallback_topic",

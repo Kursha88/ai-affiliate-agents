@@ -4,6 +4,10 @@ Step 13G regression coverage, migrated in Step 14F-B-FIX to the SELECT-stage
 production path (run_live_research -> run_select_stage ->
 content_candidate_to_news_item). Full new-path coverage lives in
 tests/unit/test_main_research_select_wiring.py.
+
+Step 15G-A-FIX migration: the Step 0 helper is now ``_get_production_discovery``
+and returns the immutable ``_ProductionDiscovery`` (selected_candidate /
+news_item / used_fallback) instead of a bare news_item dict.
 """
 
 import ast
@@ -17,7 +21,7 @@ from unittest.mock import MagicMock, patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import src.main as main_module
-from src.main import _get_production_news_item
+from src.main import _get_production_discovery
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -86,7 +90,7 @@ class _WiringTestCase(unittest.TestCase):
         self.log = MagicMock()
 
     def run_helper(self, now=NOW):
-        return _get_production_news_item(now=now, log=self.log)
+        return _get_production_discovery(now=now, log=self.log)
 
 
 class TestSuccessfulResearchPath(_WiringTestCase):
@@ -148,8 +152,10 @@ class TestSuccessfulResearchPath(_WiringTestCase):
     def test_news_item_returned_unchanged_by_identity(self):
         expected = {"title": "X", "source": "s", "url": "u", "age_hours": 1.0}
         self.bridge_m.return_value = expected
-        item = self.run_helper()
-        self.assertIs(item, expected)
+        discovery = self.run_helper()
+        self.assertIs(discovery.news_item, expected)
+        self.assertIs(discovery.selected_candidate, self.selected_candidate)
+        self.assertIs(discovery.used_fallback, False)
 
     def test_success_path_does_not_call_fallback(self):
         self.run_helper()
@@ -181,8 +187,10 @@ class TestEmptyResultFallbackPath(_WiringTestCase):
     def test_fallback_returned_unchanged_by_identity(self):
         fallback = {"title": "F", "source": "editorial", "url": "", "age_hours": 0}
         self.fallback_m.return_value = fallback
-        item = self.run_helper()
-        self.assertIs(item, fallback)
+        discovery = self.run_helper()
+        self.assertIs(discovery.news_item, fallback)
+        self.assertIsNone(discovery.selected_candidate)
+        self.assertIs(discovery.used_fallback, True)
 
     def test_empty_result_logs_warning(self):
         self.run_helper()
@@ -204,27 +212,35 @@ class TestEmptyResultFallbackPath(_WiringTestCase):
 class TestExceptionFallbackPaths(_WiringTestCase):
     def test_config_error_uses_fallback_once(self):
         self.config_m.get_research_config.side_effect = RuntimeError("config boom")
-        item = self.run_helper()
+        discovery = self.run_helper()
         self.fallback_m.assert_called_once_with()
-        self.assertEqual(item, FALLBACK_ITEM)
+        self.assertEqual(discovery.news_item, FALLBACK_ITEM)
+        self.assertIsNone(discovery.selected_candidate)
+        self.assertIs(discovery.used_fallback, True)
 
     def test_run_live_research_error_uses_fallback_once(self):
         self.research_m.side_effect = RuntimeError("network boom")
-        item = self.run_helper()
+        discovery = self.run_helper()
         self.fallback_m.assert_called_once_with()
-        self.assertEqual(item, FALLBACK_ITEM)
+        self.assertEqual(discovery.news_item, FALLBACK_ITEM)
+        self.assertIsNone(discovery.selected_candidate)
+        self.assertIs(discovery.used_fallback, True)
 
     def test_select_stage_error_uses_fallback_once(self):
         self.select_stage_m.side_effect = ValueError("select boom")
-        item = self.run_helper()
+        discovery = self.run_helper()
         self.fallback_m.assert_called_once_with()
-        self.assertEqual(item, FALLBACK_ITEM)
+        self.assertEqual(discovery.news_item, FALLBACK_ITEM)
+        self.assertIsNone(discovery.selected_candidate)
+        self.assertIs(discovery.used_fallback, True)
 
     def test_bridge_error_uses_fallback_once(self):
         self.bridge_m.side_effect = ValueError("bridge boom")
-        item = self.run_helper()
+        discovery = self.run_helper()
         self.fallback_m.assert_called_once_with()
-        self.assertEqual(item, FALLBACK_ITEM)
+        self.assertEqual(discovery.news_item, FALLBACK_ITEM)
+        self.assertIsNone(discovery.selected_candidate)
+        self.assertIs(discovery.used_fallback, True)
 
     def test_researcher_exception_logs_warning(self):
         self.research_m.side_effect = RuntimeError("network boom")
@@ -279,7 +295,7 @@ class TestStructuralBoundaries(unittest.TestCase):
         return descriptors
 
     def test_helper_has_no_clock_random_hunter_or_pipeline_calls(self):
-        helper = self.functions["_get_production_news_item"]
+        helper = self.functions["_get_production_discovery"]
         descriptors = self._call_descriptors(helper)
 
         banned_exact = {
@@ -310,9 +326,10 @@ class TestStructuralBoundaries(unittest.TestCase):
                 )
 
     def test_helper_calls_are_only_expected_ones(self):
-        helper = self.functions["_get_production_news_item"]
+        helper = self.functions["_get_production_discovery"]
         descriptors = set(self._call_descriptors(helper))
         allowed = {
+            ("name", "_ProductionDiscovery"),
             ("attr", "Config.get_research_config"),
             ("name", "run_live_research"),
             ("name", "run_select_stage"),
@@ -334,7 +351,7 @@ class TestStructuralBoundaries(unittest.TestCase):
 
     def test_helper_does_not_reference_legacy_result_bridge(self):
         # Step 14F-B removed the old compatibility path from production.
-        helper = self.functions["_get_production_news_item"]
+        helper = self.functions["_get_production_discovery"]
         self.assertNotIn("research_result_to_news_item", ast.unparse(helper))
         # ...and it is no longer imported anywhere in src/main.py.
         self.assertNotIn("research_result_to_news_item", ast.unparse(self.tree))
@@ -347,7 +364,7 @@ class TestStructuralBoundaries(unittest.TestCase):
             for node in ast.walk(inner)
             if isinstance(node, ast.Call)
             and isinstance(node.func, ast.Name)
-            and node.func.id == "_get_production_news_item"
+            and node.func.id == "_get_production_discovery"
         ]
         self.assertEqual(len(step0_calls), 1)
         call = step0_calls[0]
@@ -372,6 +389,26 @@ class TestStructuralBoundaries(unittest.TestCase):
         log_kw = next(kw for kw in call.keywords if kw.arg == "log")
         self.assertIsInstance(log_kw.value, ast.Name)
         self.assertEqual(log_kw.value.id, "log")
+
+        # Step 0 must read discovery.news_item (Step 15G-A boundary).
+        discovery_news_reads = [
+            node
+            for node in ast.walk(inner)
+            if isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Attribute)
+            and isinstance(node.value.value, ast.Name)
+            and node.value.value.id == "discovery"
+            and node.value.attr == "news_item"
+        ]
+        self.assertEqual(len(discovery_news_reads), 1)
+        self.assertEqual(
+            [
+                target.id
+                for target in discovery_news_reads[0].targets
+                if isinstance(target, ast.Name)
+            ],
+            ["news_item"],
+        )
 
     def test_no_production_get_top_ai_news_call_anywhere(self):
         for node in ast.walk(self.tree):

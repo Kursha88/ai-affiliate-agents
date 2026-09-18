@@ -91,8 +91,12 @@ class TestPipelineSmoke(unittest.TestCase):
             mock.patch("src.main.get_logger", return_value=_DummyLogger()),
             mock.patch("random.random", return_value=0.9),
             mock.patch(
-                "src.main._get_production_news_item",
-                return_value=copy.deepcopy(FIXED_NEWS),
+                "src.main._get_production_discovery",
+                return_value=src.main._ProductionDiscovery(
+                    selected_candidate=object(),
+                    news_item=copy.deepcopy(FIXED_NEWS),
+                    used_fallback=False,
+                ),
             ),
             mock.patch(
                 "src.main.create_content_plan",
