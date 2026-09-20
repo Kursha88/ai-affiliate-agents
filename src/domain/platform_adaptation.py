@@ -22,6 +22,7 @@ __all__ = [
     "AdaptationSourceContent",
     "PlatformAdaptationSpec",
     "PlatformContentVariant",
+    "PlatformAdaptationInstruction",
 ]
 
 
@@ -74,4 +75,26 @@ class PlatformContentVariant:
     cta: str
     cta_link: str
     language: str
+    metadata: Mapping[str, Any]
+
+
+@dataclass(frozen=True)
+class PlatformAdaptationInstruction:
+    """Execution instruction snapshot consumed by a future adaptation executor."""
+
+    candidate_id: str
+    source_content_id: str
+    platform: TargetPlatform
+    content_kind: AdaptationContentKind
+    source_language: str
+    output_language: str
+    requires_title: bool
+    allows_external_link: bool
+    max_characters: Optional[int]
+    structure: Tuple[str, ...]
+    tone: str
+    source_title: str
+    source_body: str
+    source_cta: str
+    source_cta_link: str
     metadata: Mapping[str, Any]

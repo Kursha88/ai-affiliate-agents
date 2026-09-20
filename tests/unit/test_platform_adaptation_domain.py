@@ -506,6 +506,7 @@ class StructuralTests(unittest.TestCase):
                 "AdaptationSourceContent",
                 "PlatformAdaptationSpec",
                 "PlatformContentVariant",
+                "PlatformAdaptationInstruction",
             ],
         )
         enum_classes = [
@@ -524,6 +525,7 @@ class StructuralTests(unittest.TestCase):
                 "AdaptationSourceContent",
                 "PlatformAdaptationSpec",
                 "PlatformContentVariant",
+                "PlatformAdaptationInstruction",
             ],
         )
 
