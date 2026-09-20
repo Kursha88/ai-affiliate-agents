@@ -1,6 +1,11 @@
-"""Tests for Stage 18C deterministic platform content variant builder."""
+"""Tests for Stage 18C deterministic platform content variant builder.
+
+Updated in 18D-D1: language is a caller-owned, required keyword-only field.
+source.language is no longer consumed by the builder.
+"""
 
 import ast
+import inspect
 import unittest
 
 import src.content.platform_variant_builder as builder_module
@@ -70,6 +75,26 @@ def _make_custom_spec(
     )
 
 
+class SignatureTests(unittest.TestCase):
+    def test_signature_exact(self):
+        signature = inspect.signature(build_platform_content_variant)
+        parameters = list(signature.parameters.values())
+        self.assertEqual(
+            [p.name for p in parameters],
+            ["source", "spec", "title", "body", "cta", "language", "metadata"],
+        )
+        by_name = {p.name: p for p in parameters}
+        for name in ("source", "spec"):
+            self.assertEqual(
+                by_name[name].kind, inspect.Parameter.POSITIONAL_OR_KEYWORD
+            )
+        for name in ("title", "body", "cta", "language", "metadata"):
+            with self.subTest(parameter=name):
+                self.assertEqual(by_name[name].kind, inspect.Parameter.KEYWORD_ONLY)
+                self.assertIs(by_name[name].default, inspect.Parameter.empty)
+        self.assertIs(by_name["language"].annotation, str)
+
+
 class RealSpecBuildTests(unittest.TestCase):
     """Builds against the real Stage 18B policy specs."""
 
@@ -84,6 +109,7 @@ class RealSpecBuildTests(unittest.TestCase):
             title="Telegram title",
             body="Telegram body",
             cta="Telegram CTA",
+            language="ru",
             metadata=metadata,
         )
         self.assertIsInstance(variant, PlatformContentVariant)
@@ -106,6 +132,7 @@ class RealSpecBuildTests(unittest.TestCase):
             title="THIS MUST NOT SURVIVE",
             body="X body",
             cta="X CTA",
+            language="ru",
             metadata={},
         )
         self.assertEqual(variant.title, "")
@@ -120,6 +147,7 @@ class RealSpecBuildTests(unittest.TestCase):
             title="THIS MUST NOT SURVIVE",
             body="LinkedIn body",
             cta="LinkedIn CTA",
+            language="ru",
             metadata={},
         )
         self.assertEqual(variant.title, "")
@@ -133,6 +161,7 @@ class RealSpecBuildTests(unittest.TestCase):
             title="Reddit title",
             body="Reddit body",
             cta="Discuss this",
+            language="ru",
             metadata={},
         )
         self.assertEqual(variant.title, "Reddit title")
@@ -147,6 +176,7 @@ class RealSpecBuildTests(unittest.TestCase):
             title="Shorts title",
             body="hook: ...\nsetup: ...\npayoff: ...",
             cta="Follow for more",
+            language="ru",
             metadata={},
         )
         self.assertIs(variant.content_kind, AdaptationContentKind.SHORT_VIDEO_SCRIPT)
@@ -161,6 +191,7 @@ class RealSpecBuildTests(unittest.TestCase):
             title="THIS MUST NOT SURVIVE",
             body="TikTok script",
             cta="Link in bio",
+            language="ru",
             metadata={},
         )
         self.assertIs(variant.content_kind, AdaptationContentKind.SHORT_VIDEO_SCRIPT)
@@ -176,6 +207,7 @@ class RealSpecBuildTests(unittest.TestCase):
             title="Pin title",
             body="Pin description",
             cta="Save this pin",
+            language="ru",
             metadata={},
         )
         self.assertIs(variant.content_kind, AdaptationContentKind.PIN_COPY)
@@ -194,6 +226,7 @@ class IdentityAndDeterminismTests(unittest.TestCase):
                 title="t",
                 body="b",
                 cta="c",
+                language="ru",
                 metadata={},
             )
             with self.subTest(platform=platform):
@@ -209,10 +242,10 @@ class IdentityAndDeterminismTests(unittest.TestCase):
         spec = get_platform_adaptation_spec(TargetPlatform.TELEGRAM)
         metadata = {"adaptation": "again"}
         first = build_platform_content_variant(
-            source, spec, title="t", body="b", cta="c", metadata=metadata
+            source, spec, title="t", body="b", cta="c", language="ru", metadata=metadata
         )
         second = build_platform_content_variant(
-            source, spec, title="t", body="b", cta="c", metadata=metadata
+            source, spec, title="t", body="b", cta="c", language="ru", metadata=metadata
         )
         self.assertEqual(first, second)
         self.assertIsNot(first, second)
@@ -228,6 +261,7 @@ class IdentityAndDeterminismTests(unittest.TestCase):
             title="t",
             body="b",
             cta="c",
+            language="ru",
             metadata={},
         )
         self.assertEqual(variant.variant_id, "canonical-999:x")
@@ -235,12 +269,90 @@ class IdentityAndDeterminismTests(unittest.TestCase):
         self.assertEqual(variant.source_content_id, "canonical-999")
 
 
+class CallerLanguageOwnershipTests(unittest.TestCase):
+    """18D-D1: language is caller-owned; source.language is never consumed."""
+
+    def test_caller_language_uk_overrides_source_ru(self):
+        source = _make_source(language="ru")
+        variant = build_platform_content_variant(
+            source,
+            get_platform_adaptation_spec(TargetPlatform.TELEGRAM),
+            title="t",
+            body="b",
+            cta="c",
+            language="uk",
+            metadata={},
+        )
+        self.assertEqual(variant.language, "uk")
+
+    def test_caller_empty_language_preserved(self):
+        source = _make_source(language="ru")
+        variant = build_platform_content_variant(
+            source,
+            get_platform_adaptation_spec(TargetPlatform.TELEGRAM),
+            title="t",
+            body="b",
+            cta="c",
+            language="",
+            metadata={},
+        )
+        self.assertEqual(variant.language, "")
+
+    def test_changing_only_source_language_does_not_change_variant(self):
+        spec = get_platform_adaptation_spec(TargetPlatform.TELEGRAM)
+        variant_a = build_platform_content_variant(
+            _make_source(language="ru"),
+            spec,
+            title="t",
+            body="b",
+            cta="c",
+            language="uk",
+            metadata={},
+        )
+        variant_b = build_platform_content_variant(
+            _make_source(language="en"),
+            spec,
+            title="t",
+            body="b",
+            cta="c",
+            language="uk",
+            metadata={},
+        )
+        self.assertEqual(variant_a, variant_b)
+        self.assertEqual(variant_a.language, "uk")
+        self.assertEqual(variant_b.language, "uk")
+
+    def test_source_language_ignored_with_different_sources(self):
+        source_a = _make_source(language="ru")
+        source_b = _make_source(language="en")
+        spec = _make_custom_spec()
+        variant_a = build_platform_content_variant(
+            source_a, spec, title="t", body="b", cta="c", language="uk", metadata={"m": 1}
+        )
+        variant_b = build_platform_content_variant(
+            source_b, spec, title="t", body="b", cta="c", language="uk", metadata={"m": 1}
+        )
+        self.assertEqual(variant_a, variant_b)
+        self.assertEqual(variant_a.language, "uk")
+        self.assertEqual(variant_b.language, "uk")
+
+    def test_language_verbatim(self):
+        source = _make_source(language="ru")
+        spec = _make_custom_spec()
+        for language in ("ru", "uk", "en", "", " xx ", "\nlang\n"):
+            with self.subTest(language=language):
+                variant = build_platform_content_variant(
+                    source, spec, title="t", body="b", cta="c", language=language, metadata={}
+                )
+                self.assertEqual(variant.language, language)
+
+
 class CustomSpecPolicyTests(unittest.TestCase):
     def test_title_policy_true(self):
         source = _make_source()
         spec = _make_custom_spec(requires_title=True)
         variant = build_platform_content_variant(
-            source, spec, title="Custom title", body="b", cta="c", metadata={}
+            source, spec, title="Custom title", body="b", cta="c", language="ru", metadata={}
         )
         self.assertEqual(variant.title, "Custom title")
 
@@ -248,7 +360,7 @@ class CustomSpecPolicyTests(unittest.TestCase):
         source = _make_source()
         spec = _make_custom_spec(requires_title=False)
         variant = build_platform_content_variant(
-            source, spec, title="ignored", body="b", cta="c", metadata={}
+            source, spec, title="ignored", body="b", cta="c", language="ru", metadata={}
         )
         self.assertEqual(variant.title, "")
 
@@ -256,7 +368,7 @@ class CustomSpecPolicyTests(unittest.TestCase):
         source = _make_source(cta_link="not-a-url")
         spec = _make_custom_spec(allows_external_link=True)
         variant = build_platform_content_variant(
-            source, spec, title="t", body="b", cta="c", metadata={}
+            source, spec, title="t", body="b", cta="c", language="ru", metadata={}
         )
         self.assertEqual(variant.cta_link, "not-a-url")
 
@@ -264,7 +376,7 @@ class CustomSpecPolicyTests(unittest.TestCase):
         source = _make_source(cta_link="not-a-url")
         spec = _make_custom_spec(allows_external_link=False)
         variant = build_platform_content_variant(
-            source, spec, title="t", body="b", cta="c", metadata={}
+            source, spec, title="t", body="b", cta="c", language="ru", metadata={}
         )
         self.assertEqual(variant.cta_link, "")
 
@@ -272,7 +384,7 @@ class CustomSpecPolicyTests(unittest.TestCase):
         source = _make_source()
         spec = _make_custom_spec(allows_external_link=False)
         variant = build_platform_content_variant(
-            source, spec, title="t", body="b", cta="Discuss this", metadata={}
+            source, spec, title="t", body="b", cta="Discuss this", language="ru", metadata={}
         )
         self.assertEqual(variant.cta, "Discuss this")
         self.assertEqual(variant.cta_link, "")
@@ -283,11 +395,11 @@ class NoFallbackTests(unittest.TestCase):
         source = _make_source(body="CANONICAL")
         spec = _make_custom_spec()
         empty = build_platform_content_variant(
-            source, spec, title="t", body="", cta="c", metadata={}
+            source, spec, title="t", body="", cta="c", language="ru", metadata={}
         )
         self.assertEqual(empty.body, "")
         adapted = build_platform_content_variant(
-            source, spec, title="t", body="ADAPTED", cta="c", metadata={}
+            source, spec, title="t", body="ADAPTED", cta="c", language="ru", metadata={}
         )
         self.assertEqual(adapted.body, "ADAPTED")
 
@@ -295,7 +407,7 @@ class NoFallbackTests(unittest.TestCase):
         source = _make_source(title="CANONICAL TITLE")
         spec = _make_custom_spec(requires_title=True)
         variant = build_platform_content_variant(
-            source, spec, title="", body="b", cta="c", metadata={}
+            source, spec, title="", body="b", cta="c", language="ru", metadata={}
         )
         self.assertEqual(variant.title, "")
 
@@ -303,32 +415,43 @@ class NoFallbackTests(unittest.TestCase):
         source = _make_source(cta="CANONICAL CTA")
         spec = _make_custom_spec()
         variant = build_platform_content_variant(
-            source, spec, title="t", body="b", cta="", metadata={}
+            source, spec, title="t", body="b", cta="", language="ru", metadata={}
         )
         self.assertEqual(variant.cta, "")
+
+    def test_language_never_falls_back(self):
+        source = _make_source(language="CANONICAL-LANG")
+        spec = _make_custom_spec()
+        variant = build_platform_content_variant(
+            source, spec, title="t", body="b", cta="c", language="", metadata={}
+        )
+        self.assertEqual(variant.language, "")
 
     def test_source_text_fields_not_used(self):
         base = _make_source(
             title="Title A",
             body="Body A",
             cta="CTA A",
+            language="ru",
             metadata={"source": "a"},
         )
         other = _make_source(
             title="Title B",
             body="Body B",
             cta="CTA B",
+            language="en",
             metadata={"source": "b"},
         )
         spec = _make_custom_spec()
         metadata = {"adaptation": "fixed"}
         first = build_platform_content_variant(
-            base, spec, title="fixed title", body="fixed body", cta="fixed cta", metadata=metadata
+            base, spec, title="fixed title", body="fixed body", cta="fixed cta", language="uk", metadata=metadata
         )
         second = build_platform_content_variant(
-            other, spec, title="fixed title", body="fixed body", cta="fixed cta", metadata=metadata
+            other, spec, title="fixed title", body="fixed body", cta="fixed cta", language="uk", metadata=metadata
         )
         self.assertEqual(first, second)
+        self.assertEqual(first.language, "uk")
         self.assertEqual(first.metadata, {"adaptation": "fixed"})
 
     def test_source_link_does_affect_allowed_link(self):
@@ -336,10 +459,10 @@ class NoFallbackTests(unittest.TestCase):
         source_b = _make_source(cta_link="B")
         spec = _make_custom_spec(allows_external_link=True)
         variant_a = build_platform_content_variant(
-            source_a, spec, title="t", body="b", cta="c", metadata={}
+            source_a, spec, title="t", body="b", cta="c", language="ru", metadata={}
         )
         variant_b = build_platform_content_variant(
-            source_b, spec, title="t", body="b", cta="c", metadata={}
+            source_b, spec, title="t", body="b", cta="c", language="ru", metadata={}
         )
         self.assertEqual(variant_a.cta_link, "A")
         self.assertEqual(variant_b.cta_link, "B")
@@ -349,26 +472,13 @@ class NoFallbackTests(unittest.TestCase):
         source_b = _make_source(cta_link="B")
         spec = _make_custom_spec(allows_external_link=False)
         variant_a = build_platform_content_variant(
-            source_a, spec, title="t", body="b", cta="c", metadata={}
+            source_a, spec, title="t", body="b", cta="c", language="ru", metadata={}
         )
         variant_b = build_platform_content_variant(
-            source_b, spec, title="t", body="b", cta="c", metadata={}
+            source_b, spec, title="t", body="b", cta="c", language="ru", metadata={}
         )
         self.assertEqual(variant_a.cta_link, "")
         self.assertEqual(variant_b.cta_link, "")
-
-    def test_language_preserved(self):
-        source = _make_source(language="uk")
-        variant = build_platform_content_variant(
-            source, _make_custom_spec(), title="t", body="b", cta="c", metadata={}
-        )
-        self.assertEqual(variant.language, "uk")
-
-        empty_language = _make_source(language="")
-        empty_variant = build_platform_content_variant(
-            empty_language, _make_custom_spec(), title="t", body="b", cta="c", metadata={}
-        )
-        self.assertEqual(empty_variant.language, "")
 
 
 class MetadataTests(unittest.TestCase):
@@ -379,7 +489,7 @@ class MetadataTests(unittest.TestCase):
         }
         source = _make_source()
         variant = build_platform_content_variant(
-            source, _make_custom_spec(), title="t", body="b", cta="c", metadata=metadata
+            source, _make_custom_spec(), title="t", body="b", cta="c", language="ru", metadata=metadata
         )
         self.assertIs(variant.metadata, metadata)
 
@@ -392,7 +502,7 @@ class MetadataTests(unittest.TestCase):
             "collision": "variant",
         }
         variant = build_platform_content_variant(
-            source, _make_custom_spec(), title="t", body="b", cta="c", metadata=variant_metadata
+            source, _make_custom_spec(), title="t", body="b", cta="c", language="ru", metadata=variant_metadata
         )
         self.assertIs(variant.metadata, variant_metadata)
         self.assertEqual(
@@ -411,7 +521,7 @@ class SpecFieldIndifferenceTests(unittest.TestCase):
             spec = _make_custom_spec(max_characters=max_characters)
             variants.append(
                 build_platform_content_variant(
-                    source, spec, title="t", body=long_body, cta="c", metadata={}
+                    source, spec, title="t", body=long_body, cta="c", language="ru", metadata={}
                 )
             )
         for variant in variants:
@@ -432,10 +542,10 @@ class SpecFieldIndifferenceTests(unittest.TestCase):
             tone="tone-b",
         )
         variant_a = build_platform_content_variant(
-            source, spec_a, title="t", body="b", cta="c", metadata={}
+            source, spec_a, title="t", body="b", cta="c", language="ru", metadata={}
         )
         variant_b = build_platform_content_variant(
-            source, spec_b, title="t", body="b", cta="c", metadata={}
+            source, spec_b, title="t", body="b", cta="c", language="ru", metadata={}
         )
         self.assertEqual(variant_a, variant_b)
 
@@ -445,7 +555,7 @@ class SpecFieldIndifferenceTests(unittest.TestCase):
             with self.subTest(content_kind=content_kind):
                 spec = _make_custom_spec(content_kind=content_kind)
                 variant = build_platform_content_variant(
-                    source, spec, title="t", body="b", cta="c", metadata={}
+                    source, spec, title="t", body="b", cta="c", language="ru", metadata={}
                 )
                 self.assertIs(variant.content_kind, content_kind)
 
@@ -464,6 +574,7 @@ class EdgeCaseTests(unittest.TestCase):
             title="",
             body="",
             cta="",
+            language="",
             metadata={},
         )
         self.assertEqual(variant.variant_id, ":telegram")
@@ -483,7 +594,7 @@ class EdgeCaseTests(unittest.TestCase):
         source_metadata_ref = source.metadata
         spec_structure_ref = spec.structure
         variant = build_platform_content_variant(
-            source, spec, title="t", body="b", cta="c", metadata=metadata
+            source, spec, title="t", body="b", cta="c", language="ru", metadata=metadata
         )
         self.assertIs(source, source_ref)
         self.assertIs(source.metadata, source_metadata_ref)
@@ -501,6 +612,8 @@ class StructuralTests(unittest.TestCase):
         "get_platform_adaptation_specs",
         "TargetPlatform",
         "AdaptationContentKind",
+        "PlatformAdaptationExecutionResult",
+        "AdaptationExecutionStatus",
         "StrategistPlan",
         "ContentPackageV2",
         "PlatformVariantRef",
@@ -650,11 +763,17 @@ class StructuralTests(unittest.TestCase):
             if isinstance(node, ast.Attribute)
         }
         self.assertEqual(
-            source_attrs & {"content_id", "candidate_id", "cta_link", "language"},
-            {"content_id", "candidate_id", "cta_link", "language"},
+            source_attrs & {"content_id", "candidate_id", "cta_link"},
+            {"content_id", "candidate_id", "cta_link"},
         )
-        for forbidden in ("title", "body", "cta", "metadata"):
+        for forbidden in ("title", "body", "cta", "metadata", "language"):
             self.assertNotIn(forbidden, source_attrs)
+
+    def test_no_source_language_attribute_access(self):
+        tree = _module_tree()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Attribute):
+                self.assertNotEqual(node.attr, "language")
 
     def test_spec_accesses_exactly_limited(self):
         tree = _module_tree()
@@ -750,6 +869,11 @@ class StructuralTests(unittest.TestCase):
         self.assertIsInstance(expr.orelse, ast.Constant)
         self.assertEqual(expr.orelse.value, "")
 
+    def test_exactly_two_conditional_expressions(self):
+        tree = _module_tree()
+        if_exps = [n for n in ast.walk(tree) if isinstance(n, ast.IfExp)]
+        self.assertEqual(len(if_exps), 2)
+
     def test_direct_field_passthrough(self):
         tree = _module_tree()
         function = next(
@@ -778,8 +902,14 @@ class StructuralTests(unittest.TestCase):
         self.assertEqual(_attr_name(keywords["content_kind"]), "content_kind")
         self.assertEqual(_name_id(keywords["body"]), "body")
         self.assertEqual(_name_id(keywords["cta"]), "cta")
-        self.assertEqual(_attr_name(keywords["language"]), "language")
+        self.assertEqual(_name_id(keywords["language"]), "language")
         self.assertEqual(_name_id(keywords["metadata"]), "metadata")
+
+    def test_language_has_no_default(self):
+        signature = inspect.signature(build_platform_content_variant)
+        language = signature.parameters["language"]
+        self.assertEqual(language.kind, inspect.Parameter.KEYWORD_ONLY)
+        self.assertIs(language.default, inspect.Parameter.empty)
 
     def test_no_if_statements_or_platform_comparisons(self):
         tree = _module_tree()

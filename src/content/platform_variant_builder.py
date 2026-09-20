@@ -29,6 +29,7 @@ def build_platform_content_variant(
     title: str,
     body: str,
     cta: str,
+    language: str,
     metadata: Mapping[str, Any],
 ) -> PlatformContentVariant:
     return PlatformContentVariant(
@@ -45,6 +46,6 @@ def build_platform_content_variant(
             if spec.allows_external_link
             else ""
         ),
-        language=source.language,
+        language=language,
         metadata=metadata,
     )
